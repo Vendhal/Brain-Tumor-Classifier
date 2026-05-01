@@ -1,0 +1,11 @@
+{
+  "astrocytoma": 0.7700000000000005,
+  "ependymoma": 0.7300000000000004,
+  "glioma": 0.7400000000000004,
+  "hemangiopericytoma": 0.31,
+  "meningioma": 0.5700000000000003,
+  "neurocytoma": 0.4500000000000001,
+  "normal": 0.4000000000000001,
+  "oligodendroglioma": 0.6400000000000003,
+  "schwannoma": 0.5100000000000002
+}

@@ -1,0 +1,58 @@
+# Large training data
+filtered_synthetic.pt
+Brain Tumor MRI Dataset/
+
+# Training artifacts & visualizations
+generated_samples/
+architecture_diagrams/
+oof_results/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.idea/
+
+# Environment
+.env
+.venv
+venv/
+
+# Logs
+*.log
+cls_training_log
+gan_training_log
+fid_score
+fs_score
+confusion_matrix
+
+# Training/evaluation scripts (keep code clean)
+evaluate.py
+Test_cpu.py
+gan_loss_curve.py
+writeup_*.py
+sample_preview.py
+classifier_curves.py
+train_cls.py
+train_gan.py
+filter.py
+convert_to_keras.py
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Jupyter
+*.ipynb_checkpoints
+
+# Keep only essential checkpoints
+checkpoints/classifier_fold*.pt
+checkpoints/D_epoch_*.pt
+checkpoints/G_epoch_*.pt
+checkpoints/scaler_fold2.pt
+checkpoints/scaler_fold3.pt
+checkpoints/scaler_fold4.pt
+checkpoints/scaler_fold5.pt
+checkpoints/D_final.keras.npz
+checkpoints/classifier_final.keras.npz
