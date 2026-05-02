@@ -195,6 +195,9 @@
                     <h3>📄 Full FHIR DiagnosticReport</h3>
                     <pre class="json-output" id="jsonOutput"></pre>
                 </div>
+
+                <!-- Download Button -->
+                <button class="btn" onclick="downloadReport()" style="margin-top:10px;background:linear-gradient(135deg,#10b981 0%,#059669 100%);">📥 Download FHIR Report (JSON)</button>
             </div>
         </div>
 
@@ -208,6 +211,11 @@
     </div>
 
     <script>
+        // ✅ SERVER CONFIG - Change this to switch between local and remote!
+        const SERVER_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:8000/mcp'        // 🏠 Local (instant!)
+            : 'https://brain-tumor-classifier-g48f.onrender.com/mcp';  // ☁️ Remote (may need wake up)
+
         let selectedFile = null;
         let base64Image = null;
 
@@ -269,7 +277,16 @@
 
                 // ✅ FIX: Use application/json Accept header (not text/event-stream)
                 // FastMCP streamable HTTP returns SSE, so we read the stream manually
-                const response = await fetch('https://brain-tumor-classifier-g48f.onrender.com/mcp', {
+                // Wake up server first if remote
+                if (SERVER_URL.includes('onrender.com')) {
+                    try {
+                        document.querySelector('.loader p').textContent = '⏳ Waking up server... (free tier sleeps ~30 sec)';
+                        await fetch(SERVER_URL.replace('/mcp', '/health'), {method: 'GET', signal: AbortSignal.timeout(55000)}).catch(()=>{});
+                        document.querySelector('.loader p').textContent = '🧠 Analyzing MRI scan...';
+                    } catch(e) {}
+                }
+
+                const response = await fetch(SERVER_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -423,6 +440,26 @@
 
         function hideError() {
             errorMessage.classList.remove('active');
+        }
+
+        function downloadReport() {
+            const data = document.getElementById("jsonOutput").textContent;
+            if (!data || data.trim() === '') {
+                alert("No report to download! Analyze an MRI first.");
+                return;
+            }
+            const patientId = document.getElementById("patientId").value.replace("/","_") || "patient";
+            const timestamp = new Date().toISOString().slice(0,19).replace(/:/g,"-");
+            const filename = "FHIR_Report_" + patientId + "_" + timestamp + ".json";
+            const blob = new Blob([data], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
     </script>
 </body>
