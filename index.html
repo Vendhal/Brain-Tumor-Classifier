@@ -3,464 +3,1135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brain Tumor Classifier - Test Interface</title>
+    <title>Brain Tumor Classifier | Neuro-Symbolic MCP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg: #050a0f;
+            --surface: #0d1117;
+            --surface2: #161b22;
+            --border: #21262d;
+            --accent: #00d9ff;
+            --accent2: #7c3aed;
+            --accent3: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --text: #e6edf3;
+            --muted: #7d8590;
+            --mono: 'Space Mono', monospace;
+            --sans: 'Syne', sans-serif;
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--sans);
             min-height: 100vh;
-            padding: 20px;
+            overflow-x: hidden;
         }
 
-        .container { max-width: 1200px; margin: 0 auto; }
-
-        .header { text-align: center; color: white; margin-bottom: 30px; }
-        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
-        .header p { font-size: 1.1em; opacity: 0.9; }
-
-        .main-card {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        /* Grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(0,217,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,217,255,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
         }
 
-        .upload-section {
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── HEADER ── */
+        header {
+            padding: 40px 0 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 40px;
+        }
+
+        .header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--accent2), var(--accent));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .logo-text h1 {
+            font-size: 1.4em;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: var(--text);
+        }
+
+        .logo-text p {
+            font-size: 0.75em;
+            color: var(--muted);
+            font-family: var(--mono);
+            margin-top: 2px;
+        }
+
+        .header-badges {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.72em;
+            font-family: var(--mono);
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            border: 1px solid;
+        }
+
+        .badge-cyan { color: var(--accent); border-color: rgba(0,217,255,0.3); background: rgba(0,217,255,0.07); }
+        .badge-purple { color: #a78bfa; border-color: rgba(124,58,237,0.3); background: rgba(124,58,237,0.07); }
+        .badge-green { color: var(--accent3); border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.07); }
+
+        /* ── TABS ── */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 32px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 4px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 16px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            color: var(--muted);
+            font-family: var(--sans);
+            font-size: 0.9em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover { color: var(--text); background: var(--surface2); }
+        .tab-btn.active { background: var(--accent2); color: white; }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* ── CARDS ── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 28px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 0.8em;
+            font-family: var(--mono);
+            color: var(--accent);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        /* ── UPLOAD ZONE ── */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 48px 24px;
             text-align: center;
-            padding: 40px;
-            border: 3px dashed #667eea;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            background: #f8f9ff;
             cursor: pointer;
             transition: all 0.3s;
+            background: var(--surface2);
+            position: relative;
+            overflow: hidden;
         }
-        .upload-section:hover { border-color: #764ba2; background: #f0f2ff; }
-        .upload-section.dragover { border-color: #764ba2; background: #e8ebff; transform: scale(1.02); }
-        .upload-icon { font-size: 4em; margin-bottom: 20px; }
-        .upload-text { font-size: 1.2em; color: #667eea; font-weight: 600; margin-bottom: 10px; }
-        .upload-hint { color: #666; font-size: 0.9em; }
-        #fileInput { display: none; }
 
-        .input-group { margin-bottom: 20px; }
-        .input-group label { display: block; margin-bottom: 8px; color: #333; font-weight: 600; }
-        .input-group input {
-            width: 100%; padding: 12px;
-            border: 2px solid #e0e0e0; border-radius: 8px;
-            font-size: 1em; transition: border-color 0.3s;
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--accent);
+            background: rgba(0,217,255,0.05);
         }
-        .input-group input:focus { outline: none; border-color: #667eea; }
 
+        .upload-zone input { display: none; }
+        .upload-icon { font-size: 3em; margin-bottom: 12px; opacity: 0.7; }
+        .upload-text { font-size: 1.1em; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+        .upload-hint { font-size: 0.8em; color: var(--muted); font-family: var(--mono); }
+
+        /* ── PREVIEW ── */
+        .preview-wrap { margin: 20px 0; display: none; }
+        .preview-wrap.show { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
+
+        .preview-img {
+            width: 180px;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 2px solid var(--border);
+        }
+
+        .preview-info { flex: 1; min-width: 160px; }
+        .preview-info h3 { font-size: 1em; font-weight: 700; margin-bottom: 8px; }
+        .preview-info p { font-size: 0.8em; color: var(--muted); font-family: var(--mono); }
+
+        /* ── INPUTS ── */
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 0.8em; color: var(--muted); font-family: var(--mono); margin-bottom: 6px; }
+
+        input[type="text"], input[type="number"], textarea, select {
+            width: 100%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 0.85em;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+
+        input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+        textarea { resize: vertical; min-height: 80px; }
+
+        select option { background: var(--surface2); }
+
+        /* ── BUTTONS ── */
         .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white; border: none; padding: 15px 40px;
-            font-size: 1.1em; font-weight: 600; border-radius: 10px;
-            cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; width: 100%;
-        }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(102,126,234,0.4); }
-        .btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
-
-        .preview-section { margin: 30px 0; display: none; }
-        .preview-section.active { display: block; }
-        .preview-image { max-width: 300px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); margin-bottom: 20px; }
-
-        .results-section { margin-top: 30px; display: none; }
-        .results-section.active { display: block; }
-
-        .result-card {
-            background: #f8f9ff; padding: 25px; border-radius: 15px;
-            margin-bottom: 20px; border-left: 5px solid #667eea;
-        }
-        .result-card h3 { color: #667eea; margin-bottom: 15px; font-size: 1.3em; }
-
-        .result-item {
-            display: flex; justify-content: space-between;
-            padding: 10px 0; border-bottom: 1px solid #e0e0e0;
-        }
-        .result-item:last-child { border-bottom: none; }
-        .result-label { font-weight: 600; color: #333; }
-        .result-value { color: #666; }
-
-        .confidence-high { color: #10b981; font-weight: 700; }
-        .confidence-medium { color: #f59e0b; font-weight: 700; }
-        .confidence-low { color: #ef4444; font-weight: 700; }
-
-        .json-output {
-            background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 10px;
-            font-family: 'Courier New', monospace; font-size: 0.9em;
-            max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-wrap: break-word;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-family: var(--sans);
+            font-size: 0.9em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: 0.02em;
         }
 
-        .loader { display: none; text-align: center; padding: 30px; }
-        .loader.active { display: block; }
+        .btn:hover { transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+        .btn-primary { background: linear-gradient(135deg, var(--accent2), #6d28d9); color: white; width: 100%; justify-content: center; }
+        .btn-cyan { background: rgba(0,217,255,0.1); border: 1px solid rgba(0,217,255,0.3); color: var(--accent); }
+        .btn-green { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: var(--accent3); }
+        .btn-sm { padding: 8px 16px; font-size: 0.8em; }
+
+        /* ── RESULTS ── */
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .result-stat {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .result-stat-label { font-size: 0.7em; font-family: var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+        .result-stat-value { font-size: 1.2em; font-weight: 800; }
+
+        .conf-high { color: var(--accent3); }
+        .conf-mid { color: var(--warning); }
+        .conf-low { color: var(--danger); }
+
+        /* ── JSON OUTPUT ── */
+        .json-box {
+            background: #0d1117;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            font-family: var(--mono);
+            font-size: 0.78em;
+            color: #79c0ff;
+            max-height: 320px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            line-height: 1.6;
+        }
+
+        /* ── LOADER ── */
+        .loader { display: none; text-align: center; padding: 24px; }
+        .loader.show { display: block; }
+
         .spinner {
-            border: 4px solid #f3f3f3; border-top: 4px solid #667eea;
-            border-radius: 50%; width: 50px; height: 50px;
-            animation: spin 1s linear infinite; margin: 0 auto 20px;
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .error-message { background: #fee; color: #c33; padding: 15px; border-radius: 8px; margin-top: 20px; display: none; }
-        .error-message.active { display: block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        .info-banner {
-            background: #e0f2fe; border-left: 5px solid #0ea5e9;
-            padding: 20px; border-radius: 10px; margin-bottom: 30px;
+        .loader-text { font-size: 0.85em; color: var(--muted); font-family: var(--mono); }
+
+        /* ── ERROR / SUCCESS ── */
+        .alert { padding: 12px 16px; border-radius: 8px; font-size: 0.85em; font-family: var(--mono); margin-top: 12px; display: none; }
+        .alert.show { display: block; }
+        .alert-error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
+        .alert-success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; }
+
+        /* ── TOOL TESTER ── */
+        .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
         }
-        .info-banner h3 { color: #0369a1; margin-bottom: 10px; }
-        .info-banner p { color: #075985; line-height: 1.6; }
 
-        .footer { text-align: center; color: white; margin-top: 40px; opacity: 0.9; }
-        .footer a { color: white; text-decoration: underline; }
+        .tool-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+
+        .tool-card:hover { border-color: rgba(0,217,255,0.3); }
+
+        .tool-card-header {
+            padding: 16px 20px;
+            background: var(--surface2);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tool-number {
+            width: 28px;
+            height: 28px;
+            background: var(--accent2);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75em;
+            font-weight: 700;
+            font-family: var(--mono);
+            flex-shrink: 0;
+        }
+
+        .tool-name { font-size: 0.9em; font-weight: 700; font-family: var(--mono); color: var(--accent); }
+        .tool-desc { font-size: 0.72em; color: var(--muted); margin-top: 2px; }
+
+        .tool-body { padding: 16px 20px; }
+
+        .tool-result {
+            margin-top: 12px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: var(--mono);
+            font-size: 0.72em;
+            color: #79c0ff;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            display: none;
+        }
+
+        .tool-result.show { display: block; }
+
+        /* ── PROB BARS ── */
+        .prob-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .prob-label { font-size: 0.75em; font-family: var(--mono); color: var(--muted); width: 160px; flex-shrink: 0; }
+        .prob-bar-wrap { flex: 1; background: var(--surface2); border-radius: 4px; height: 8px; overflow: hidden; }
+        .prob-bar { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.6s ease; }
+        .prob-pct { font-size: 0.72em; font-family: var(--mono); color: var(--text); width: 45px; text-align: right; flex-shrink: 0; }
+
+        /* ── REASONING ── */
+        .rule-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .rule-item:last-child { border-bottom: none; }
+        .rule-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+        .rule-dot.pass { background: var(--accent3); }
+        .rule-dot.warn { background: var(--warning); }
+        .rule-dot.fail { background: var(--danger); }
+        .rule-text { font-size: 0.82em; font-family: var(--mono); }
+        .rule-label { color: var(--muted); font-size: 0.9em; }
+        .rule-value { color: var(--text); font-weight: 700; margin-left: 4px; }
+
+        /* ── FOOTER ── */
+        footer {
+            text-align: center;
+            padding: 40px 0;
+            color: var(--muted);
+            font-size: 0.78em;
+            font-family: var(--mono);
+            border-top: 1px solid var(--border);
+            margin-top: 60px;
+        }
+
+        footer a { color: var(--accent); text-decoration: none; }
+
+        /* ── SECTION HEADERS ── */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 1.3em;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        .section-subtitle {
+            font-size: 0.8em;
+            color: var(--muted);
+            font-family: var(--mono);
+            margin-top: 4px;
+        }
+
+        /* ── URGENT BADGE ── */
+        .urgency-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 700;
+            font-family: var(--mono);
+        }
+
+        .urgency-immediate { background: rgba(239,68,68,0.15); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
+        .urgency-urgent { background: rgba(245,158,11,0.15); color: var(--warning); border: 1px solid rgba(245,158,11,0.3); }
+        .urgency-routine { background: rgba(16,185,129,0.15); color: var(--accent3); border: 1px solid rgba(16,185,129,0.3); }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--surface); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+        @media (max-width: 600px) {
+            .tab-btn span { display: none; }
+            .result-grid { grid-template-columns: 1fr 1fr; }
+            .tool-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🧠 Brain Tumor Classifier</h1>
-            <p>Neuro-Symbolic AI for MRI Analysis | FHIR-Compliant | MCP-Enabled</p>
-        </div>
+<div class="container">
 
-        <div class="main-card">
-            <div class="info-banner">
-                <h3>🎯 How It Works</h3>
-                <p>
-                    Upload a brain MRI scan, and our neuro-symbolic AI will analyze it using a hybrid approach:
-                    <strong>Neural Networks</strong> (FFT + CGAN + MobileNetV2) combined with
-                    <strong>Symbolic Reasoning</strong> to classify 9 brain tumor types.
-                    Results are returned as FHIR-compliant DiagnosticReports ready for EHR integration.
-                </p>
+    <!-- HEADER -->
+    <header>
+        <div class="header-inner">
+            <div class="logo">
+                <div class="logo-icon">🧠</div>
+                <div class="logo-text">
+                    <h1>Brain Tumor Classifier</h1>
+                    <p>Neuro-Symbolic MCP Server · 6 Clinical Tools</p>
+                </div>
             </div>
+            <div class="header-badges">
+                <span class="badge badge-cyan">FHIR R4</span>
+                <span class="badge badge-purple">MCP</span>
+                <span class="badge badge-green">Open Access</span>
+            </div>
+        </div>
+    </header>
 
-            <div class="upload-section" id="uploadSection">
+    <!-- TABS -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('analyze')">
+            🔬 <span>Analyze MRI</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('tools')">
+            🛠️ <span>Test All Tools</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('about')">
+            📋 <span>About</span>
+        </button>
+    </div>
+
+    <!-- ════════════════════════════════ -->
+    <!-- TAB 1: ANALYZE MRI              -->
+    <!-- ════════════════════════════════ -->
+    <div id="tab-analyze" class="tab-panel active">
+
+        <div class="card">
+            <div class="card-title">Upload MRI Scan</div>
+
+            <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                <input type="file" id="fileInput" accept="image/jpeg,image/png,image/jpg">
                 <div class="upload-icon">📤</div>
                 <div class="upload-text">Click to upload or drag & drop</div>
-                <div class="upload-hint">Supported formats: JPG, PNG, JPEG</div>
-                <input type="file" id="fileInput" accept="image/jpeg,image/png,image/jpg">
+                <div class="upload-hint">JPG · PNG · JPEG · Brain MRI scans only</div>
             </div>
 
-            <div class="preview-section" id="previewSection">
-                <h3>📷 Preview:</h3>
-                <img id="previewImage" class="preview-image" alt="MRI Preview">
+            <div class="preview-wrap" id="previewWrap">
+                <img id="previewImg" class="preview-img" alt="MRI Preview">
+                <div class="preview-info">
+                    <h3 id="previewName">-</h3>
+                    <p id="previewSize">-</p>
+                    <p id="previewDims" style="margin-top:6px">-</p>
+                </div>
             </div>
 
-            <div class="input-group">
-                <label for="patientId">Patient Reference (optional):</label>
-                <input type="text" id="patientId" placeholder="Patient/12345" value="Patient/test-001">
+            <div class="form-group" style="margin-top:20px">
+                <label>Patient Reference</label>
+                <input type="text" id="patientRef" value="Patient/test-001" placeholder="Patient/12345">
             </div>
 
-            <button class="btn" id="analyzeBtn" disabled>Analyze MRI</button>
+            <button class="btn btn-primary" id="analyzeBtn" disabled onclick="runAnalysis()">
+                🔬 Analyze MRI
+            </button>
 
-            <div class="loader" id="loader">
+            <div class="loader" id="analyzeLoader">
                 <div class="spinner"></div>
-                <p>Analyzing MRI scan... This may take a few seconds.</p>
+                <div class="loader-text" id="analyzeLoaderText">Analyzing scan...</div>
             </div>
-
-            <div class="error-message" id="errorMessage"></div>
-
-            <div class="results-section" id="resultsSection">
-                <div class="result-card">
-                    <h3>🔬 Classification Results</h3>
-                    <div class="result-item">
-                        <span class="result-label">Detected Tumor Type:</span>
-                        <span class="result-value" id="tumorType">-</span>
-                    </div>
-                    <div class="result-item">
-                        <span class="result-label">Confidence:</span>
-                        <span class="result-value" id="confidence">-</span>
-                    </div>
-                    <div class="result-item">
-                        <span class="result-label">Status:</span>
-                        <span class="result-value" id="status">-</span>
-                    </div>
-                    <div class="result-item">
-                        <span class="result-label">Severity:</span>
-                        <span class="result-value" id="severity">-</span>
-                    </div>
-                </div>
-
-                <div class="result-card">
-                    <h3>🧮 Symbolic Reasoning Trace</h3>
-                    <div id="reasoningTrace"></div>
-                </div>
-
-                <div class="result-card">
-                    <h3>📊 All Class Probabilities</h3>
-                    <div id="allProbabilities"></div>
-                </div>
-
-                <div class="result-card">
-                    <h3>📄 Full FHIR DiagnosticReport</h3>
-                    <pre class="json-output" id="jsonOutput"></pre>
-                </div>
-
-                <!-- Download Button -->
-                <button class="btn" onclick="downloadReport()" style="margin-top:10px;background:linear-gradient(135deg,#10b981 0%,#059669 100%);">📥 Download FHIR Report (JSON)</button>
-            </div>
+            <div class="alert alert-error" id="analyzeError"></div>
         </div>
 
-        <div class="footer">
-            <p>
-                Built for <strong>Agents Assemble Hackathon</strong> |
-                <a href="https://github.com/Vendhal/Brain-Tumor-Classifier" target="_blank">GitHub</a> |
-                Powered by MCP & FHIR
-            </p>
+        <!-- RESULTS -->
+        <div id="resultsSection" style="display:none">
+            <div class="card">
+                <div class="card-title">Classification Results</div>
+                <div class="result-grid">
+                    <div class="result-stat">
+                        <div class="result-stat-label">Tumor Type</div>
+                        <div class="result-stat-value" id="resTumorType" style="font-size:1em">-</div>
+                    </div>
+                    <div class="result-stat">
+                        <div class="result-stat-label">Confidence</div>
+                        <div class="result-stat-value" id="resConfidence">-</div>
+                    </div>
+                    <div class="result-stat">
+                        <div class="result-stat-label">Status</div>
+                        <div class="result-stat-value" id="resStatus">-</div>
+                    </div>
+                    <div class="result-stat">
+                        <div class="result-stat-label">Severity</div>
+                        <div class="result-stat-value" id="resSeverity">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Symbolic Reasoning Trace</div>
+                <div id="reasoningBox"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">All Class Probabilities</div>
+                <div id="probBars"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Full FHIR DiagnosticReport</div>
+                <pre class="json-box" id="jsonOutput"></pre>
+                <button class="btn btn-green btn-sm" onclick="downloadFHIR()" style="margin-top:12px">
+                    📥 Download FHIR Report (JSON)
+                </button>
+            </div>
         </div>
     </div>
 
-    <script>
-        // ✅ SERVER CONFIG - Change this to switch between local and remote!
-        const SERVER_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? 'http://localhost:8000/mcp'        // 🏠 Local (instant!)
-            : 'https://brain-tumor-classifier-g48f.onrender.com/mcp';  // ☁️ Remote (may need wake up)
+    <!-- ════════════════════════════════ -->
+    <!-- TAB 2: TEST ALL TOOLS           -->
+    <!-- ════════════════════════════════ -->
+    <div id="tab-tools" class="tab-panel">
+        <div class="section-header">
+            <div>
+                <div class="section-title">Tool Tester</div>
+                <div class="section-subtitle">Test all 6 MCP tools directly in your browser</div>
+            </div>
+        </div>
 
-        let selectedFile = null;
-        let base64Image = null;
+        <div class="tool-grid">
 
-        const uploadSection = document.getElementById('uploadSection');
-        const fileInput = document.getElementById('fileInput');
-        const previewSection = document.getElementById('previewSection');
-        const previewImage = document.getElementById('previewImage');
-        const analyzeBtn = document.getElementById('analyzeBtn');
-        const loader = document.getElementById('loader');
-        const errorMessage = document.getElementById('errorMessage');
-        const resultsSection = document.getElementById('resultsSection');
+            <!-- TOOL 3: list_tumor_classes -->
+            <div class="tool-card">
+                <div class="tool-card-header">
+                    <div class="tool-number">3</div>
+                    <div>
+                        <div class="tool-name">list_tumor_classes</div>
+                        <div class="tool-desc">List all 9 detectable tumor types</div>
+                    </div>
+                </div>
+                <div class="tool-body">
+                    <p style="font-size:0.8em;color:var(--muted);margin-bottom:12px;font-family:var(--mono)">No arguments needed</p>
+                    <button class="btn btn-cyan btn-sm" onclick="testListClasses()">▶ Run Tool</button>
+                    <div class="loader" id="loader3"><div class="spinner" style="width:24px;height:24px;border-width:2px"></div></div>
+                    <pre class="tool-result" id="result3"></pre>
+                </div>
+            </div>
 
-        uploadSection.addEventListener('click', () => fileInput.click());
+            <!-- TOOL 2: get_tumor_info -->
+            <div class="tool-card">
+                <div class="tool-card-header">
+                    <div class="tool-number">2</div>
+                    <div>
+                        <div class="tool-name">get_tumor_info</div>
+                        <div class="tool-desc">Clinical details for a tumor type</div>
+                    </div>
+                </div>
+                <div class="tool-body">
+                    <div class="form-group">
+                        <label>Tumor Class</label>
+                        <select id="tumorClassInput">
+                            <option value="glioma">glioma</option>
+                            <option value="astrocytoma">astrocytoma</option>
+                            <option value="ependymoma">ependymoma</option>
+                            <option value="meningioma">meningioma</option>
+                            <option value="neurocytoma">neurocytoma</option>
+                            <option value="oligodendroglioma">oligodendroglioma</option>
+                            <option value="schwannoma">schwannoma</option>
+                            <option value="hemangiopericytoma">hemangiopericytoma</option>
+                            <option value="normal">normal</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-cyan btn-sm" onclick="testGetTumorInfo()">▶ Run Tool</button>
+                    <div class="loader" id="loader2"><div class="spinner" style="width:24px;height:24px;border-width:2px"></div></div>
+                    <pre class="tool-result" id="result2"></pre>
+                </div>
+            </div>
 
-        uploadSection.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadSection.classList.add('dragover');
-        });
-        uploadSection.addEventListener('dragleave', () => uploadSection.classList.remove('dragover'));
-        uploadSection.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadSection.classList.remove('dragover');
-            if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
-        });
+            <!-- TOOL 4: validate_mri_image -->
+            <div class="tool-card">
+                <div class="tool-card-header">
+                    <div class="tool-number">4</div>
+                    <div>
+                        <div class="tool-name">validate_mri_image</div>
+                        <div class="tool-desc">Check image quality before analysis</div>
+                    </div>
+                </div>
+                <div class="tool-body">
+                    <p style="font-size:0.75em;color:var(--muted);margin-bottom:10px;font-family:var(--mono)">Uses image from Analyze MRI tab (upload one first)</p>
+                    <button class="btn btn-cyan btn-sm" onclick="testValidate()">▶ Run Tool</button>
+                    <div class="loader" id="loader4"><div class="spinner" style="width:24px;height:24px;border-width:2px"></div></div>
+                    <pre class="tool-result" id="result4"></pre>
+                </div>
+            </div>
 
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) handleFile(e.target.files[0]);
-        });
+            <!-- TOOL 1: analyze_mri -->
+            <div class="tool-card">
+                <div class="tool-card-header">
+                    <div class="tool-number">1</div>
+                    <div>
+                        <div class="tool-name">analyze_mri</div>
+                        <div class="tool-desc">Classify brain tumor from MRI image</div>
+                    </div>
+                </div>
+                <div class="tool-body">
+                    <p style="font-size:0.75em;color:var(--muted);margin-bottom:10px;font-family:var(--mono)">Uses image from Analyze MRI tab (upload one first)</p>
+                    <div class="form-group">
+                        <label>Patient Reference</label>
+                        <input type="text" id="toolPatientRef" value="Patient/tool-test-001">
+                    </div>
+                    <button class="btn btn-cyan btn-sm" onclick="testAnalyzeMRI()">▶ Run Tool</button>
+                    <div class="loader" id="loader1"><div class="spinner" style="width:24px;height:24px;border-width:2px"></div></div>
+                    <pre class="tool-result" id="result1"></pre>
+                </div>
+            </div>
 
-        function handleFile(file) {
-            if (!file.type.match('image.*')) {
-                showError('Please upload an image file (JPG, PNG, JPEG)');
-                return;
+            <!-- TOOL 5: assess_urgency -->
+            <div class="tool-card">
+                <div class="tool-card-header">
+                    <div class="tool-number">5</div>
+                    <div>
+                        <div class="tool-name">assess_urgency</div>
+                        <div class="tool-desc">Clinical urgency from FHIR report</div>
+                    </div>
+                </div>
+                <div class="tool-body">
+                    <div class="form-group">
+                        <label>Patient Age</label>
+                        <input type="number" id="urgencyAge" value="45" min="0" max="120">
+                    </div>
+                    <div class="form-group">
+                        <label>Additional Symptoms</label>
+                        <input type="text" id="urgencySymptoms" placeholder="e.g. headaches, dizziness">
+                    </div>
+                    <p style="font-size:0.72em;color:var(--muted);margin-bottom:10px;font-family:var(--mono)">Run analyze_mri first to get a FHIR report</p>
+                    <button class="btn btn-cyan btn-sm" onclick="testAssessUrgency()">▶ Run Tool</button>
+                    <div class="loader" id="loader5"><div class="spinner" style="width:24px;height:24px;border-width:2px"></div></div>
+                    <pre class="tool-result" id="result5"></pre>
+                </div>
+            </div>
+
+            <!-- TOOL 6: generate_clinical_summary -->
+            <div class="tool-card">
+                <div class="tool-card-header">
+                    <div class="tool-number">6</div>
+                    <div>
+                        <div class="tool-name">generate_clinical_summary</div>
+                        <div class="tool-desc">Plain-English summary from FHIR report</div>
+                    </div>
+                </div>
+                <div class="tool-body">
+                    <div class="form-group">
+                        <label>Format</label>
+                        <select id="summaryFormat">
+                            <option value="clinical">clinical (for doctors)</option>
+                            <option value="patient">patient (simplified)</option>
+                        </select>
+                    </div>
+                    <p style="font-size:0.72em;color:var(--muted);margin-bottom:10px;font-family:var(--mono)">Run analyze_mri first to get a FHIR report</p>
+                    <button class="btn btn-cyan btn-sm" onclick="testGenerateSummary()">▶ Run Tool</button>
+                    <div class="loader" id="loader6"><div class="spinner" style="width:24px;height:24px;border-width:2px"></div></div>
+                    <pre class="tool-result" id="result6"></pre>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="card" style="margin-top:20px">
+            <div class="card-title">Run All Tools Sequentially</div>
+            <p style="font-size:0.85em;color:var(--muted);margin-bottom:16px">Upload an MRI in the Analyze tab first, then click below to test all 6 tools at once.</p>
+            <button class="btn btn-primary" onclick="runAllTools()">🚀 Test All 6 Tools</button>
+            <div class="loader" id="loaderAll"><div class="spinner"></div><div class="loader-text" id="loaderAllText">Running tests...</div></div>
+            <div class="alert" id="allToolsAlert"></div>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════ -->
+    <!-- TAB 3: ABOUT                    -->
+    <!-- ════════════════════════════════ -->
+    <div id="tab-about" class="tab-panel">
+        <div class="card">
+            <div class="card-title">What Is This?</div>
+            <p style="line-height:1.8;font-size:0.95em;color:var(--muted)">
+                The <strong style="color:var(--text)">Brain Tumor MRI Classifier</strong> is a neuro-symbolic AI system deployed as an MCP server on Prompt Opinion.
+                It's the <strong style="color:var(--accent)">only medical imaging AI tool</strong> in the marketplace — while every other submission handles text-based workflows
+                (drug interactions, prior authorization, lab results), we classify brain tumors directly from raw MRI scans.
+            </p>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Architecture</div>
+            <div style="font-family:var(--mono);font-size:0.82em;color:#79c0ff;background:var(--bg);padding:20px;border-radius:10px;border:1px solid var(--border)">
+MRI Image (JPG/PNG)
+    ↓ FFT Preprocessing (frequency domain)
+    ↓ CGAN Augmentation (synthetic enrichment)
+    ↓ MobileNetV2 (9-class neural network)
+    ↓ Temperature Scaling (confidence calibration)
+    ↓ Symbolic Reasoning (3 clinical rules)
+    ↓ FHIR R4 DiagnosticReport (EHR-ready)
+    ↓ MCP Tool Response (agent-consumable)</div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">6 MCP Tools</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;gap:12px;align-items:flex-start">
+                    <span style="background:var(--accent2);color:white;padding:3px 10px;border-radius:5px;font-family:var(--mono);font-size:0.75em;flex-shrink:0">analyze_mri</span>
+                    <span style="font-size:0.85em;color:var(--muted)">Classify brain tumor from MRI → FHIR DiagnosticReport</span>
+                </div>
+                <div style="display:flex;gap:12px;align-items:flex-start">
+                    <span style="background:var(--accent2);color:white;padding:3px 10px;border-radius:5px;font-family:var(--mono);font-size:0.75em;flex-shrink:0">get_tumor_info</span>
+                    <span style="font-size:0.85em;color:var(--muted)">Clinical details, symptoms, treatment for any tumor class</span>
+                </div>
+                <div style="display:flex;gap:12px;align-items:flex-start">
+                    <span style="background:var(--accent2);color:white;padding:3px 10px;border-radius:5px;font-family:var(--mono);font-size:0.75em;flex-shrink:0">list_tumor_classes</span>
+                    <span style="font-size:0.85em;color:var(--muted)">List all 9 detectable tumor types with severity info</span>
+                </div>
+                <div style="display:flex;gap:12px;align-items:flex-start">
+                    <span style="background:var(--accent2);color:white;padding:3px 10px;border-radius:5px;font-family:var(--mono);font-size:0.75em;flex-shrink:0">validate_mri_image</span>
+                    <span style="font-size:0.85em;color:var(--muted)">Check image quality and suitability before analysis</span>
+                </div>
+                <div style="display:flex;gap:12px;align-items:flex-start">
+                    <span style="background:var(--accent2);color:white;padding:3px 10px;border-radius:5px;font-family:var(--mono);font-size:0.75em;flex-shrink:0">assess_urgency</span>
+                    <span style="font-size:0.85em;color:var(--muted)">Clinical urgency level (IMMEDIATE/URGENT/ROUTINE) + next steps</span>
+                </div>
+                <div style="display:flex;gap:12px;align-items:flex-start">
+                    <span style="background:var(--accent2);color:white;padding:3px 10px;border-radius:5px;font-family:var(--mono);font-size:0.75em;flex-shrink:0">generate_clinical_summary</span>
+                    <span style="font-size:0.85em;color:var(--muted)">Plain-English summary for doctors or patients</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Links</div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap">
+                <a href="https://github.com/Vendhal/Brain-Tumor-Classifier" target="_blank" class="btn btn-cyan btn-sm">📦 GitHub Repo</a>
+                <a href="https://app.promptopinion.ai/marketplace" target="_blank" class="btn btn-cyan btn-sm">🏪 Prompt Opinion</a>
+                <a href="https://brain-tumor-classifier-g48f.onrender.com/mcp" target="_blank" class="btn btn-cyan btn-sm">🌐 MCP Endpoint</a>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        Built for <strong>Agents Assemble Hackathon 2026</strong> · KLU ·
+        <a href="https://github.com/Vendhal/Brain-Tumor-Classifier">GitHub</a> ·
+        Powered by MCP + FHIR + PyTorch
+        <br><br>
+        ⚠️ For research purposes only. Not approved for clinical diagnosis.
+    </footer>
+</div>
+
+<script>
+const SERVER_URL = 'https://brain-tumor-classifier-g48f.onrender.com/mcp';
+let base64Image = null;
+let lastFHIRReport = null;
+
+// ── TAB SWITCHING ──
+function switchTab(name) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.currentTarget.classList.add('active');
+}
+
+// ── FILE UPLOAD ──
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+function handleFile(file) {
+    if (!file.type.match('image.*')) { showError('analyzeError', 'Please upload a JPG or PNG image'); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+        base64Image = e.target.result;
+        document.getElementById('previewImg').src = base64Image;
+        document.getElementById('previewName').textContent = file.name;
+        document.getElementById('previewSize').textContent = (file.size / 1024).toFixed(1) + ' KB';
+        document.getElementById('previewWrap').classList.add('show');
+        document.getElementById('analyzeBtn').disabled = false;
+        hideError('analyzeError');
+    };
+    reader.readAsDataURL(file);
+}
+
+// ── MCP CALL ──
+async function callTool(toolName, args) {
+    const payload = {
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: { name: toolName, arguments: args },
+        id: 1
+    };
+    const res = await fetch(SERVER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream' },
+        body: JSON.stringify(payload)
+    });
+    const ct = res.headers.get('content-type') || '';
+    if (ct.includes('text/event-stream')) {
+        const text = await res.text();
+        for (const line of text.split('\n')) {
+            if (line.startsWith('data:')) {
+                const d = line.slice(5).trim();
+                if (d && d !== '[DONE]') {
+                    try { const p = JSON.parse(d); if (p.result || p.error) return p; } catch {}
+                }
             }
-            selectedFile = file;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                previewImage.src = e.target.result;
-                previewSection.classList.add('active');
-                base64Image = e.target.result;
-                analyzeBtn.disabled = false;
-                hideError();
-            };
-            reader.readAsDataURL(file);
+        }
+        throw new Error('Could not parse SSE response');
+    }
+    return await res.json();
+}
+
+function extractText(resp) {
+    if (!resp) return 'No response';
+    if (resp.error && typeof resp.error === 'string') return resp.error;
+    try {
+        const c = resp.result?.content;
+        if (c?.[0]?.text) return c[0].text;
+        if (typeof resp.result === 'string') return resp.result;
+    } catch {}
+    return JSON.stringify(resp, null, 2);
+}
+
+// ── MAIN ANALYSIS ──
+async function runAnalysis() {
+    if (!base64Image) return;
+    const loader = document.getElementById('analyzeLoader');
+    const btn = document.getElementById('analyzeBtn');
+    loader.classList.add('show');
+    btn.disabled = true;
+    document.getElementById('resultsSection').style.display = 'none';
+    hideError('analyzeError');
+
+    try {
+        if (SERVER_URL.includes('onrender.com')) {
+            document.getElementById('analyzeLoaderText').textContent = '⏳ Waking up server... (~30 sec)';
+            await fetch(SERVER_URL.replace('/mcp', '/health')).catch(() => {});
+            document.getElementById('analyzeLoaderText').textContent = '🧠 Analyzing MRI scan...';
         }
 
-        analyzeBtn.addEventListener('click', analyzeMRI);
+        const b64 = base64Image.split(',')[1];
+        const resp = await callTool('analyze_mri', {
+            image_data: b64,
+            patient_reference: document.getElementById('patientRef').value || 'Patient/unknown'
+        });
+        const text = extractText(resp);
+        const fhir = JSON.parse(text);
+        lastFHIRReport = text;
+        displayResults(fhir);
+    } catch (e) {
+        showError('analyzeError', 'Analysis failed: ' + e.message);
+    } finally {
+        loader.classList.remove('show');
+        btn.disabled = false;
+    }
+}
 
-        async function analyzeMRI() {
-            const patientId = document.getElementById('patientId').value || 'Patient/test-001';
+function displayResults(fhir) {
+    const ext = fhir.extension?.[0]?.extension || [];
+    let neural = {}, symbolic = {}, uncertain = false;
+    for (const e of ext) {
+        if (e.url === 'neuralOutput') neural = JSON.parse(e.valueString);
+        if (e.url === 'symbolicReasoning') symbolic = JSON.parse(e.valueString);
+        if (e.url === 'uncertaintyFlag') uncertain = e.valueBoolean;
+    }
 
-            loader.classList.add('active');
-            resultsSection.classList.remove('active');
-            analyzeBtn.disabled = true;
-            hideError();
+    const conf = neural.confidence * 100;
+    const confClass = conf >= 70 ? 'conf-high' : conf >= 50 ? 'conf-mid' : 'conf-low';
+    document.getElementById('resTumorType').textContent = neural.topPrediction?.toUpperCase() || '-';
+    document.getElementById('resConfidence').innerHTML = `<span class="${confClass}">${conf.toFixed(1)}%</span>`;
+    document.getElementById('resStatus').textContent = fhir.status?.toUpperCase() || '-';
+    document.getElementById('resSeverity').textContent = symbolic.rule2_severity?.severity?.toUpperCase() || '-';
 
-            try {
-                const base64Data = base64Image.split(',')[1];
+    // Reasoning
+    const r1 = symbolic.rule1_threshold;
+    const r3 = symbolic.rule3_ambiguity;
+    document.getElementById('reasoningBox').innerHTML = `
+        <div class="rule-item">
+            <div class="rule-dot ${r1?.result === 'CONFIDENT' ? 'pass' : 'warn'}"></div>
+            <div class="rule-text"><span class="rule-label">Rule 1 Confidence:</span><span class="rule-value">${r1?.confidence} vs threshold ${r1?.threshold} → ${r1?.result}</span></div>
+        </div>
+        <div class="rule-item">
+            <div class="rule-dot pass"></div>
+            <div class="rule-text"><span class="rule-label">Rule 2 Severity:</span><span class="rule-value">${symbolic.rule2_severity?.severity?.toUpperCase()} — Priority: ${symbolic.rule2_severity?.priority}</span></div>
+        </div>
+        <div class="rule-item">
+            <div class="rule-dot ${r3?.result === 'CLEAR' ? 'pass' : 'warn'}"></div>
+            <div class="rule-text"><span class="rule-label">Rule 3 Ambiguity:</span><span class="rule-value">Gap ${r3?.top2_gap} → ${r3?.result}</span></div>
+        </div>
+    `;
 
-                // ✅ FIX: Use application/json Accept header (not text/event-stream)
-                // FastMCP streamable HTTP returns SSE, so we read the stream manually
-                // Wake up server first if remote
-                if (SERVER_URL.includes('onrender.com')) {
-                    try {
-                        document.querySelector('.loader p').textContent = '⏳ Waking up server... (free tier sleeps ~30 sec)';
-                        await fetch(SERVER_URL.replace('/mcp', '/health'), {method: 'GET', signal: AbortSignal.timeout(55000)}).catch(()=>{});
-                        document.querySelector('.loader p').textContent = '🧠 Analyzing MRI scan...';
-                    } catch(e) {}
-                }
+    // Prob bars
+    const CLASSES = ['astrocytoma','ependymoma','glioma','meningioma','neurocytoma','oligodendroglioma','schwannoma','hemangiopericytoma','normal'];
+    const probs = neural.probabilities || [];
+    document.getElementById('probBars').innerHTML = probs.map((p, i) => `
+        <div class="prob-item">
+            <div class="prob-label">${CLASSES[i]}</div>
+            <div class="prob-bar-wrap"><div class="prob-bar" style="width:${(p*100).toFixed(1)}%"></div></div>
+            <div class="prob-pct">${(p*100).toFixed(1)}%</div>
+        </div>
+    `).join('');
 
-                const response = await fetch(SERVER_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json, text/event-stream'  // ✅ FIXED: accept both
-                    },
-                    body: JSON.stringify({
-                        jsonrpc: '2.0',
-                        method: 'tools/call',
-                        params: {
-                            name: 'analyze_mri',
-                            arguments: {
-                                image_data: base64Data,
-                                patient_reference: patientId
-                            }
-                        },
-                        id: 1
-                    })
-                });
+    document.getElementById('jsonOutput').textContent = JSON.stringify(fhir, null, 2);
+    document.getElementById('resultsSection').style.display = 'block';
+}
 
-                if (!response.ok) {
-                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
-                }
+function downloadFHIR() {
+    if (!lastFHIRReport) return;
+    const patId = document.getElementById('patientRef').value.replace('/', '_');
+    const ts = new Date().toISOString().slice(0,19).replace(/:/g, '-');
+    const blob = new Blob([lastFHIRReport], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `FHIR_Report_${patId}_${ts}.json`;
+    a.click();
+}
 
-                const contentType = response.headers.get('content-type') || '';
+// ── TOOL TESTERS ──
+function showLoader(n) { document.getElementById('loader'+n).classList.add('show'); }
+function hideLoader(n) { document.getElementById('loader'+n).classList.remove('show'); }
+function showResult(n, text) {
+    const el = document.getElementById('result'+n);
+    try { el.textContent = JSON.stringify(JSON.parse(text), null, 2); } catch { el.textContent = text; }
+    el.classList.add('show');
+}
 
-                let result;
+async function testListClasses() {
+    showLoader(3);
+    try {
+        const r = await callTool('list_tumor_classes', {});
+        showResult(3, extractText(r));
+    } catch(e) { showResult(3, 'Error: ' + e.message); }
+    hideLoader(3);
+}
 
-                if (contentType.includes('text/event-stream')) {
-                    // ✅ FIX: Handle SSE streaming response from FastMCP
-                    const text = await response.text();
-                    // SSE lines look like: data: {"jsonrpc":"2.0","result":...}
-                    const lines = text.split('\n');
-                    let jsonData = null;
-                    for (const line of lines) {
-                        if (line.startsWith('data:')) {
-                            const data = line.slice(5).trim();
-                            if (data && data !== '[DONE]') {
-                                try {
-                                    jsonData = JSON.parse(data);
-                                    // Look for the line that has result content
-                                    if (jsonData.result || jsonData.error) break;
-                                } catch (e) {
-                                    // keep trying other lines
-                                }
-                            }
-                        }
-                    }
-                    if (!jsonData) throw new Error('Could not parse SSE response');
-                    result = jsonData;
-                } else {
-                    // ✅ Regular JSON response
-                    result = await response.json();
-                }
+async function testGetTumorInfo() {
+    showLoader(2);
+    try {
+        const cls = document.getElementById('tumorClassInput').value;
+        const r = await callTool('get_tumor_info', { tumor_class: cls });
+        showResult(2, extractText(r));
+    } catch(e) { showResult(2, 'Error: ' + e.message); }
+    hideLoader(2);
+}
 
-                if (result.error) {
-                    throw new Error(result.error.message || 'Unknown error from server');
-                }
+async function testValidate() {
+    if (!base64Image) { showResult(4, 'Upload an image in the Analyze MRI tab first!'); return; }
+    showLoader(4);
+    try {
+        const r = await callTool('validate_mri_image', { image_data: base64Image.split(',')[1] });
+        showResult(4, extractText(r));
+    } catch(e) { showResult(4, 'Error: ' + e.message); }
+    hideLoader(4);
+}
 
-                // ✅ FIX: Handle both response structures
-                let fhirText;
-                if (result.result?.content?.[0]?.text) {
-                    fhirText = result.result.content[0].text;
-                } else if (result.result?.text) {
-                    fhirText = result.result.text;
-                } else if (typeof result.result === 'string') {
-                    fhirText = result.result;
-                } else {
-                    throw new Error('Unexpected response structure: ' + JSON.stringify(result).slice(0, 200));
-                }
+async function testAnalyzeMRI() {
+    if (!base64Image) { showResult(1, 'Upload an image in the Analyze MRI tab first!'); return; }
+    showLoader(1);
+    try {
+        const r = await callTool('analyze_mri', {
+            image_data: base64Image.split(',')[1],
+            patient_reference: document.getElementById('toolPatientRef').value
+        });
+        const text = extractText(r);
+        lastFHIRReport = text;
+        showResult(1, text);
+    } catch(e) { showResult(1, 'Error: ' + e.message); }
+    hideLoader(1);
+}
 
-                const fhirReport = JSON.parse(fhirText);
-                displayResults(fhirReport);
+async function testAssessUrgency() {
+    if (!lastFHIRReport) { showResult(5, 'Run analyze_mri first (Tool 1 or Analyze MRI tab)!'); return; }
+    showLoader(5);
+    try {
+        const r = await callTool('assess_urgency', {
+            fhir_report_json: lastFHIRReport,
+            patient_age: parseInt(document.getElementById('urgencyAge').value) || 0,
+            additional_symptoms: document.getElementById('urgencySymptoms').value
+        });
+        showResult(5, extractText(r));
+    } catch(e) { showResult(5, 'Error: ' + e.message); }
+    hideLoader(5);
+}
 
-            } catch (error) {
-                console.error('Error:', error);
-                showError(`Analysis failed: ${error.message}`);
-            } finally {
-                loader.classList.remove('active');
-                analyzeBtn.disabled = false;
-            }
-        }
+async function testGenerateSummary() {
+    if (!lastFHIRReport) { showResult(6, 'Run analyze_mri first (Tool 1 or Analyze MRI tab)!'); return; }
+    showLoader(6);
+    try {
+        const r = await callTool('generate_clinical_summary', {
+            fhir_report_json: lastFHIRReport,
+            format: document.getElementById('summaryFormat').value
+        });
+        showResult(6, extractText(r));
+    } catch(e) { showResult(6, 'Error: ' + e.message); }
+    hideLoader(6);
+}
 
-        function displayResults(fhirReport) {
-            const extension = fhirReport.extension[0].extension;
-            const neuralOutput = JSON.parse(extension.find(e => e.url === 'neuralOutput').valueString);
-            const symbolicReasoning = JSON.parse(extension.find(e => e.url === 'symbolicReasoning').valueString);
-            const uncertaintyFlag = extension.find(e => e.url === 'uncertaintyFlag').valueBoolean;
-            const recommendedAction = extension.find(e => e.url === 'recommendedAction').valueString;
+async function runAllTools() {
+    const loader = document.getElementById('loaderAll');
+    const alert = document.getElementById('allToolsAlert');
+    loader.classList.add('show');
+    alert.className = 'alert';
 
-            document.getElementById('tumorType').textContent = neuralOutput.topPrediction.toUpperCase();
+    const steps = [
+        { fn: testListClasses, name: 'list_tumor_classes' },
+        { fn: testGetTumorInfo, name: 'get_tumor_info' },
+        { fn: testValidate, name: 'validate_mri_image' },
+        { fn: testAnalyzeMRI, name: 'analyze_mri' },
+        { fn: testAssessUrgency, name: 'assess_urgency' },
+        { fn: testGenerateSummary, name: 'generate_clinical_summary' },
+    ];
 
-            const confidence = neuralOutput.confidence * 100;
-            const confidenceClass = confidence >= 70 ? 'confidence-high' :
-                                    confidence >= 50 ? 'confidence-medium' : 'confidence-low';
-            document.getElementById('confidence').innerHTML =
-                `<span class="${confidenceClass}">${confidence.toFixed(2)}%</span>`;
+    let passed = 0;
+    for (const step of steps) {
+        document.getElementById('loaderAllText').textContent = `Running ${step.name}...`;
+        await step.fn();
+        passed++;
+        await new Promise(r => setTimeout(r, 500));
+    }
 
-            document.getElementById('status').textContent = fhirReport.status.toUpperCase();
-            document.getElementById('severity').textContent =
-                symbolicReasoning.rule2_severity.severity.toUpperCase();
+    loader.classList.remove('show');
+    alert.textContent = `✅ All ${passed}/6 tools tested! Check each card above for results.`;
+    alert.className = 'alert alert-success show';
+}
 
-            const reasoningHTML = `
-                <div class="result-item">
-                    <span class="result-label">Rule 1 - Confidence Check:</span>
-                    <span class="result-value">
-                        ${symbolicReasoning.rule1_threshold.confidence} vs threshold ${symbolicReasoning.rule1_threshold.threshold}
-                        → <strong>${symbolicReasoning.rule1_threshold.result}</strong>
-                    </span>
-                </div>
-                <div class="result-item">
-                    <span class="result-label">Rule 2 - Severity Assessment:</span>
-                    <span class="result-value">
-                        Priority: <strong>${symbolicReasoning.rule2_severity.priority}</strong>
-                    </span>
-                </div>
-                <div class="result-item">
-                    <span class="result-label">Rule 3 - Ambiguity Detection:</span>
-                    <span class="result-value">
-                        Gap: ${symbolicReasoning.rule3_ambiguity.top2_gap}
-                        → <strong>${symbolicReasoning.rule3_ambiguity.result}</strong>
-                    </span>
-                </div>
-                <div class="result-item">
-                    <span class="result-label">Recommended Action:</span>
-                    <span class="result-value"><strong>${recommendedAction}</strong></span>
-                </div>
-            `;
-            document.getElementById('reasoningTrace').innerHTML = reasoningHTML;
+function showError(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.classList.add('show');
+}
 
-            const probsHTML = neuralOutput.probabilities
-                .map((prob, idx) => {
-                    const className = fhirReport.result[idx].display;
-                    const percentage = (prob * 100).toFixed(2);
-                    return `
-                        <div class="result-item">
-                            <span class="result-label">${className}:</span>
-                            <span class="result-value">${percentage}%</span>
-                        </div>
-                    `;
-                }).join('');
-            document.getElementById('allProbabilities').innerHTML = probsHTML;
-
-            document.getElementById('jsonOutput').textContent = JSON.stringify(fhirReport, null, 2);
-            resultsSection.classList.add('active');
-        }
-
-        function showError(message) {
-            errorMessage.textContent = message;
-            errorMessage.classList.add('active');
-        }
-
-        function hideError() {
-            errorMessage.classList.remove('active');
-        }
-
-        function downloadReport() {
-            const data = document.getElementById("jsonOutput").textContent;
-            if (!data || data.trim() === '') {
-                alert("No report to download! Analyze an MRI first.");
-                return;
-            }
-            const patientId = document.getElementById("patientId").value.replace("/","_") || "patient";
-            const timestamp = new Date().toISOString().slice(0,19).replace(/:/g,"-");
-            const filename = "FHIR_Report_" + patientId + "_" + timestamp + ".json";
-            const blob = new Blob([data], {type: "application/json"});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-    </script>
+function hideError(id) {
+    document.getElementById(id).classList.remove('show');
+}
+</script>
 </body>
 </html>
