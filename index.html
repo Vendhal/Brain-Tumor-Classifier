@@ -990,7 +990,7 @@ function displayResults(fhir) {
     `;
 
     // Prob bars
-    const CLASSES = ['astrocytoma','ependymoma','glioma','meningioma','neurocytoma','oligodendroglioma','schwannoma','hemangiopericytoma','normal'];
+    const CLASSES = ['astrocytoma','ependymoma','glioma','hemangiopericytoma','meningioma','neurocytoma','normal','oligodendroglioma','schwannoma'];
     const probs = neural.probabilities || [];
     document.getElementById('probBars').innerHTML = probs.map((p, i) => `
         <div class="prob-item">
