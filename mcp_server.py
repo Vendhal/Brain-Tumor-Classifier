@@ -79,10 +79,9 @@ _original_get_capabilities = mcp._mcp_server.get_capabilities
 
 def _patched_get_capabilities(notification_options, experimental_capabilities):
     caps = _original_get_capabilities(notification_options, experimental_capabilities)
-    # We don't require FHIR context - brain tumor analysis works standalone
     caps.model_extra["extensions"] = {
         "ai.promptopinion/fhir-context": {
-            "scopes": []  # Empty - we don't need FHIR access
+            "scopes": []
         }
     }
     return caps
@@ -127,20 +126,21 @@ async def analyze_mri(
         probs = F.softmax(logits, dim=1).squeeze().cpu().numpy()
         pred_idx = int(probs.argmax())
         pred_cls = CLASSES[pred_idx]
-        conf = float(probs[pred_idx])
-        locked_t = thresholds.get(pred_idx, 0.5)
-        uncertain = conf < locked_t
+        conf = float(probs[pred_idx])          # ✅ already float
+        locked_t = float(thresholds.get(pred_idx, 0.5))  # ✅ cast to float
+        uncertain = bool(conf < locked_t)      # ✅ cast to Python bool (fixes numpy bool)
 
     info = CLASS_INFO.get(pred_cls, {"display": pred_cls, "severity": "unknown"})
 
     # Symbolic reasoning trace
-    sorted_probs = sorted(probs, reverse=True)
-    top2_diff = sorted_probs[0] - sorted_probs[1]
+    # ✅ Cast ALL numpy values to Python float explicitly
+    sorted_probs = sorted([float(p) for p in probs], reverse=True)
+    top2_diff = float(sorted_probs[0] - sorted_probs[1])  # ✅ pure Python float
 
     reasoning = {
         "rule1_threshold": {
-            "confidence": round(conf, 4),
-            "threshold": round(locked_t, 2),
+            "confidence": round(conf, 4),          # ✅ already float
+            "threshold": round(locked_t, 2),        # ✅ already float
             "result": "UNCERTAIN" if uncertain else "CONFIDENT"
         },
         "rule2_severity": {
@@ -149,7 +149,7 @@ async def analyze_mri(
             "priority": "HIGH" if info["severity"] == "high" else "MEDIUM"
         },
         "rule3_ambiguity": {
-            "top2_gap": round(top2_diff, 4),
+            "top2_gap": round(top2_diff, 4),        # ✅ pure Python float
             "result": "AMBIGUOUS" if top2_diff < 0.15 else "CLEAR"
         }
     }
@@ -188,7 +188,7 @@ async def analyze_mri(
             {
                 "display": CLASS_INFO[CLASSES[i]]["display"],
                 "valueQuantity": {
-                    "value": round(float(probs[i]), 4),
+                    "value": round(float(probs[i]), 4),  # ✅ explicit float cast
                     "unit": "probability"
                 }
             }
@@ -202,7 +202,7 @@ async def analyze_mri(
                     "valueString": json.dumps({
                         "topPrediction": pred_cls,
                         "confidence": round(conf, 4),
-                        "probabilities": [round(float(p), 4) for p in probs]
+                        "probabilities": [round(float(p), 4) for p in probs]  # ✅ explicit float cast
                     })
                 },
                 {
@@ -211,7 +211,7 @@ async def analyze_mri(
                 },
                 {
                     "url": "uncertaintyFlag",
-                    "valueBoolean": uncertain
+                    "valueBoolean": uncertain  # ✅ now Python bool
                 },
                 {
                     "url": "recommendedAction",

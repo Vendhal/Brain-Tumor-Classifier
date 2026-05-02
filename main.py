@@ -21,5 +21,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount MCP at root (like Prompt Opinion's example)
+# Mount at both root AND /mcp to be safe
+app.mount("/mcp", mcp.streamable_http_app())
 app.mount("/", mcp.streamable_http_app())
