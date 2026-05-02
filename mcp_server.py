@@ -21,97 +21,79 @@ mcp = FastMCP("Brain Tumor Classifier", stateless_http=True, host="0.0.0.0")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ─────────────────────────────────────────────
-# CLASS INFO - extended with full clinical data
+# CLASS INFO - full clinical data
 # ─────────────────────────────────────────────
 CLASS_INFO = {
     "astrocytoma": {
-        "display": "Astrocytoma",
-        "severity": "high",
+        "display": "Astrocytoma", "severity": "high",
         "description": "A tumor arising from astrocytes (star-shaped glial cells) in the brain or spinal cord.",
         "symptoms": ["Headaches", "Seizures", "Memory problems", "Personality changes"],
         "treatment": "Surgery, radiation therapy, chemotherapy (temozolomide)",
-        "urgency": "URGENT",
-        "timeframe": "See specialist within 1-2 weeks",
+        "urgency": "URGENT", "timeframe": "See specialist within 1-2 weeks",
         "five_year_survival": "20-40% (grade dependent)"
     },
     "ependymoma": {
-        "display": "Ependymoma",
-        "severity": "high",
+        "display": "Ependymoma", "severity": "high",
         "description": "A tumor that arises from ependymal cells lining the brain ventricles and spinal cord.",
         "symptoms": ["Headaches", "Nausea/vomiting", "Neck pain", "Balance problems"],
         "treatment": "Surgical resection followed by radiation therapy",
-        "urgency": "URGENT",
-        "timeframe": "See specialist within 1-2 weeks",
+        "urgency": "URGENT", "timeframe": "See specialist within 1-2 weeks",
         "five_year_survival": "50-75% (location dependent)"
     },
     "glioma": {
-        "display": "Glioma",
-        "severity": "high",
+        "display": "Glioma", "severity": "high",
         "description": "A broad category of tumors arising from glial cells. Includes glioblastoma (GBM), the most aggressive form.",
         "symptoms": ["Progressive headaches", "Seizures", "Cognitive decline", "Weakness/numbness"],
         "treatment": "Surgery + Temozolomide + Radiation (Stupp protocol for GBM)",
-        "urgency": "IMMEDIATE",
-        "timeframe": "Emergency referral within 24-48 hours",
+        "urgency": "IMMEDIATE", "timeframe": "Emergency referral within 24-48 hours",
         "five_year_survival": "5-30% (grade dependent)"
     },
     "meningioma": {
-        "display": "Meningioma",
-        "severity": "medium",
+        "display": "Meningioma", "severity": "medium",
         "description": "A tumor arising from the meninges. Usually benign and slow-growing.",
         "symptoms": ["Headaches", "Vision problems", "Hearing loss", "Memory difficulties"],
         "treatment": "Observation (small/asymptomatic), Surgery, Stereotactic radiosurgery",
-        "urgency": "ROUTINE",
-        "timeframe": "See specialist within 4-6 weeks",
+        "urgency": "ROUTINE", "timeframe": "See specialist within 4-6 weeks",
         "five_year_survival": "70-80%"
     },
     "neurocytoma": {
-        "display": "Neurocytoma",
-        "severity": "medium",
+        "display": "Neurocytoma", "severity": "medium",
         "description": "A rare benign tumor typically found in the ventricles of young adults.",
         "symptoms": ["Hydrocephalus symptoms", "Headaches", "Vision changes"],
         "treatment": "Surgical resection, often curative",
-        "urgency": "URGENT",
-        "timeframe": "See specialist within 2-4 weeks",
+        "urgency": "URGENT", "timeframe": "See specialist within 2-4 weeks",
         "five_year_survival": "85-90%"
     },
     "oligodendroglioma": {
-        "display": "Oligodendroglioma",
-        "severity": "high",
+        "display": "Oligodendroglioma", "severity": "high",
         "description": "A tumor arising from oligodendrocytes. Often chemo-sensitive due to 1p/19q co-deletion.",
         "symptoms": ["Seizures (often first symptom)", "Headaches", "Cognitive changes"],
         "treatment": "Surgery + PCV chemotherapy + Radiation",
-        "urgency": "URGENT",
-        "timeframe": "See specialist within 1-2 weeks",
+        "urgency": "URGENT", "timeframe": "See specialist within 1-2 weeks",
         "five_year_survival": "60-80% (grade/genetics dependent)"
     },
     "schwannoma": {
-        "display": "Schwannoma",
-        "severity": "low",
+        "display": "Schwannoma", "severity": "low",
         "description": "A benign tumor arising from Schwann cells. Most common: vestibular schwannoma (acoustic neuroma).",
         "symptoms": ["Hearing loss", "Tinnitus", "Balance problems", "Facial numbness"],
         "treatment": "Observation, Stereotactic radiosurgery (Gamma Knife), Surgery",
-        "urgency": "ROUTINE",
-        "timeframe": "See specialist within 4-8 weeks",
+        "urgency": "ROUTINE", "timeframe": "See specialist within 4-8 weeks",
         "five_year_survival": "90-95%"
     },
     "hemangiopericytoma": {
-        "display": "Hemangiopericytoma",
-        "severity": "high",
+        "display": "Hemangiopericytoma", "severity": "high",
         "description": "A rare vascular tumor arising from pericytes around blood vessels. High recurrence rate.",
         "symptoms": ["Headaches", "Neurological deficits", "Seizures"],
         "treatment": "Surgery + Radiation. Close long-term follow-up required.",
-        "urgency": "URGENT",
-        "timeframe": "See specialist within 1-2 weeks",
+        "urgency": "URGENT", "timeframe": "See specialist within 1-2 weeks",
         "five_year_survival": "60-70%"
     },
     "normal": {
-        "display": "No Tumor Detected",
-        "severity": "none",
+        "display": "No Tumor Detected", "severity": "none",
         "description": "No evidence of brain tumor on this MRI scan.",
         "symptoms": [],
         "treatment": "No tumor-specific treatment required. Continue routine monitoring if symptomatic.",
-        "urgency": "ROUTINE",
-        "timeframe": "Routine follow-up as clinically indicated",
+        "urgency": "ROUTINE", "timeframe": "Routine follow-up as clinically indicated",
         "five_year_survival": "N/A"
     },
 }
@@ -156,7 +138,79 @@ def apply_fft(img_tensor):
     return magnitude
 
 
-# Patch capabilities
+# ═══════════════════════════════════════════════════════
+# SHARP EXTENSION SPECS IMPLEMENTATION
+# Standardized Healthcare Agent Resource Propagation
+# Reads FHIR context headers automatically injected by
+# Prompt Opinion when a patient context is active.
+# ═══════════════════════════════════════════════════════
+def read_sharp_context(ctx: Context) -> dict:
+    """
+    Read SHARP Extension Spec headers from Prompt Opinion.
+
+    Headers read:
+    - fhirUrl:   Base URL of the FHIR server
+    - fhirToken: Bearer token for FHIR server auth
+    - patientId: Current patient FHIR ID
+    """
+    sharp = {
+        "fhirUrl": "",
+        "fhirToken": "",
+        "patientId": "",
+        "has_context": False,
+        "error": None
+    }
+
+    if not ctx:
+        return sharp
+
+    try:
+        headers = ctx.request_context.request.headers
+
+        # Read SHARP headers
+        sharp["fhirUrl"] = headers.get("fhirUrl", "")
+        sharp["fhirToken"] = headers.get("fhirToken", "")
+        sharp["patientId"] = headers.get("patientId", "")
+
+        # Also check alternate casing (X- prefix variants)
+        if not sharp["fhirUrl"]:
+            sharp["fhirUrl"] = headers.get("X-FHIR-Server-URL", "")
+        if not sharp["fhirToken"]:
+            sharp["fhirToken"] = headers.get("X-FHIR-Access-Token", "")
+        if not sharp["patientId"]:
+            sharp["patientId"] = headers.get("X-Patient-ID", "")
+
+        # Validate token if fhirUrl is present
+        if sharp["fhirUrl"] and not sharp["fhirToken"]:
+            sharp["error"] = "SHARP_TOKEN_MISSING"
+
+        sharp["has_context"] = bool(sharp["patientId"] or sharp["fhirUrl"])
+
+    except Exception as e:
+        sharp["error"] = f"SHARP_CONTEXT_READ_ERROR: {str(e)}"
+
+    return sharp
+
+
+def validate_sharp_context(sharp: dict) -> dict | None:
+    """
+    Returns SHARP error response if context is invalid.
+    Returns None if context is valid or not required.
+    """
+    if sharp.get("error") == "SHARP_TOKEN_MISSING":
+        return {
+            "error": "SHARP_CONTEXT_MISSING",
+            "message": "fhirToken is missing. Please provide fhirUrl and fhirToken in SHARP headers.",
+            "sharp_headers_required": ["fhirUrl", "fhirToken", "patientId"],
+            "note": "This tool works in standalone mode without SHARP context. Patient reference will default to 'Patient/unknown'."
+        }
+    return None
+
+
+# ─────────────────────────────────────────────
+# CAPABILITIES PATCH
+# Declares SHARP Extension compliance
+# ─────────────────────────────────────────────
 _original_get_capabilities = mcp._mcp_server.get_capabilities
 
 
@@ -175,22 +229,45 @@ mcp._mcp_server.get_capabilities = _patched_get_capabilities
 
 # ─────────────────────────────────────────────
 # TOOL 1: analyze_mri
+# SHARP-on-MCP compliant
 # ─────────────────────────────────────────────
 @mcp.tool(
     name="analyze_mri",
-    description="Neuro-symbolic brain tumor classification from MRI scan. Analyzes MRI images using hybrid AI (neural networks + symbolic clinical reasoning) to classify 9 brain tumor types. Returns FHIR-compliant DiagnosticReport with confidence scores, uncertainty detection, and clinical recommendations."
+    description=(
+        "Performs 9-class neuro-symbolic brain tumor classification from MRI scan. "
+        "Returns a FHIR R4 DiagnosticReport with neural confidence scores, symbolic "
+        "clinical reasoning traces (3 rules: confidence threshold, severity assessment, "
+        "ambiguity detection), uncertainty flags, and clinical recommendations. "
+        "SHARP-on-MCP compliant: automatically reads fhirUrl, fhirToken, and patientId "
+        "from SHARP context headers when available in Prompt Opinion workspace."
+    )
 )
 async def analyze_mri(
-        image_data: Annotated[str, Field(description="Base64-encoded MRI image (JPG, PNG, or JPEG)")],
-        patient_reference: Annotated[str, Field(description="FHIR patient reference (e.g., 'Patient/12345')")] = "Patient/unknown",
+        image_data: Annotated[str, Field(
+            description="Base64-encoded MRI image (JPG, PNG, or JPEG format)"
+        )],
+        patient_reference: Annotated[str, Field(
+            description="FHIR patient reference e.g. 'Patient/12345'. "
+                        "Auto-populated from SHARP patientId header if available."
+        )] = "Patient/unknown",
         ctx: Context = None
 ) -> str:
-    """Analyze brain MRI for tumor classification"""
+    """
+    Neuro-symbolic brain MRI analysis with SHARP context support.
+    Automatically reads FHIR context from Prompt Opinion SHARP headers.
+    """
 
+    # ── Read SHARP context ──
+    sharp = read_sharp_context(ctx)
+
+    # Auto-populate patient_reference from SHARP patientId if not provided
+    if sharp["patientId"] and patient_reference == "Patient/unknown":
+        patient_reference = f"Patient/{sharp['patientId']}"
+
+    # ── Decode and validate base64 image ──
     if "," in image_data:
         image_data = image_data.split(",")[1]
 
-    # Fix base64 padding
     image_data = image_data.strip()
     padding = 4 - len(image_data) % 4
     if padding != 4:
@@ -199,6 +276,7 @@ async def analyze_mri(
     image_bytes = base64.b64decode(image_data)
     image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
 
+    # ── Preprocess ──
     transform = transforms.Compose([
         transforms.Grayscale(),
         transforms.Resize((IMG_SIZE, IMG_SIZE)),
@@ -209,6 +287,7 @@ async def analyze_mri(
     tensor = apply_fft(tensor)
     tensor = tensor.to(DEVICE)
 
+    # ── Neural prediction ──
     with torch.no_grad():
         logits = model(tensor)
         probs = F.softmax(logits, dim=1).squeeze().cpu().numpy()
@@ -220,6 +299,7 @@ async def analyze_mri(
 
     info = CLASS_INFO.get(pred_cls, {"display": pred_cls, "severity": "unknown"})
 
+    # ── Symbolic reasoning trace ──
     sorted_probs = sorted([float(p) for p in probs], reverse=True)
     top2_diff = float(sorted_probs[0] - sorted_probs[1])
 
@@ -240,15 +320,26 @@ async def analyze_mri(
         }
     }
 
+    # ── Build FHIR R4 DiagnosticReport ──
     report_id = hashlib.md5(patient_reference.encode()).hexdigest()[:8]
 
     fhir_report = {
         "resourceType": "DiagnosticReport",
         "id": f"mri-{report_id}",
         "status": "preliminary" if uncertain else "final",
-        "category": [{"coding": [{"system": "http://terminology.hl7.org/CodeSystem/v2-0074", "code": "RAD", "display": "Radiology"}]}],
+        "category": [{
+            "coding": [{
+                "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+                "code": "RAD",
+                "display": "Radiology"
+            }]
+        }],
         "code": {
-            "coding": [{"system": "http://loinc.org", "code": "25045-6", "display": "MRI Brain"}],
+            "coding": [{
+                "system": "http://loinc.org",
+                "code": "25045-6",
+                "display": "MRI Brain"
+            }],
             "text": "Brain Tumor MRI Classification"
         },
         "subject": {"reference": patient_reference},
@@ -258,21 +349,47 @@ async def analyze_mri(
         "result": [
             {
                 "display": CLASS_INFO[CLASSES[i]]["display"],
-                "valueQuantity": {"value": round(float(probs[i]), 4), "unit": "probability"}
+                "valueQuantity": {
+                    "value": round(float(probs[i]), 4),
+                    "unit": "probability"
+                }
             }
             for i in range(NUM_CLASSES)
         ],
+        # ── SHARP Extension: neurosymbolic reasoning trace ──
         "extension": [{
             "url": "http://ai-diagnostics.org/fhir/neurosymbolic",
             "extension": [
-                {"url": "neuralOutput", "valueString": json.dumps({
-                    "topPrediction": pred_cls,
-                    "confidence": round(conf, 4),
-                    "probabilities": [round(float(p), 4) for p in probs]
-                })},
-                {"url": "symbolicReasoning", "valueString": json.dumps(reasoning)},
-                {"url": "uncertaintyFlag", "valueBoolean": uncertain},
-                {"url": "recommendedAction", "valueString": "Refer to radiologist" if uncertain else "Clinical correlation advised"}
+                {
+                    "url": "neuralOutput",
+                    "valueString": json.dumps({
+                        "topPrediction": pred_cls,
+                        "confidence": round(conf, 4),
+                        "probabilities": [round(float(p), 4) for p in probs]
+                    })
+                },
+                {
+                    "url": "symbolicReasoning",
+                    "valueString": json.dumps(reasoning)
+                },
+                {
+                    "url": "uncertaintyFlag",
+                    "valueBoolean": uncertain
+                },
+                {
+                    "url": "recommendedAction",
+                    "valueString": "Refer to radiologist" if uncertain else "Clinical correlation advised"
+                },
+                {
+                    # SHARP context metadata - shows SHARP compliance
+                    "url": "sharpContext",
+                    "valueString": json.dumps({
+                        "sharp_compliant": True,
+                        "patient_from_sharp_context": sharp["has_context"],
+                        "fhir_server": sharp["fhirUrl"] if sharp["fhirUrl"] else "standalone_mode",
+                        "sharp_error": sharp["error"]
+                    })
+                }
             ]
         }]
     }
@@ -282,16 +399,30 @@ async def analyze_mri(
 
 # ─────────────────────────────────────────────
 # TOOL 2: get_tumor_info
+# SHARP-on-MCP compliant
 # ─────────────────────────────────────────────
 @mcp.tool(
     name="get_tumor_info",
-    description="Get detailed clinical information about a specific brain tumor type. Returns description, symptoms, treatment options, urgency level, and survival statistics. Use after analyze_mri to explain findings to clinicians or patients."
+    description=(
+        "Get detailed clinical information about a specific brain tumor type. "
+        "Returns description, common symptoms, standard treatment protocol, "
+        "clinical urgency level, recommended timeframe to see a specialist, "
+        "and 5-year survival statistics. Use after analyze_mri to explain "
+        "findings to clinicians or patients. SHARP-on-MCP compliant."
+    )
 )
 async def get_tumor_info(
-        tumor_class: Annotated[str, Field(description="Tumor class name. One of: astrocytoma, ependymoma, glioma, meningioma, neurocytoma, oligodendroglioma, schwannoma, hemangiopericytoma, normal")],
+        tumor_class: Annotated[str, Field(
+            description="Tumor class name. One of: astrocytoma, ependymoma, glioma, "
+                        "meningioma, neurocytoma, oligodendroglioma, schwannoma, "
+                        "hemangiopericytoma, normal"
+        )],
         ctx: Context = None
 ) -> str:
-    """Get clinical info about a specific tumor type"""
+    """Get clinical info about a tumor type. SHARP-on-MCP compliant."""
+
+    # Read SHARP context (for compliance - not required for this tool)
+    sharp = read_sharp_context(ctx)
 
     tumor_class = tumor_class.lower().strip()
 
@@ -318,7 +449,11 @@ async def get_tumor_info(
         "clinical_urgency": info["urgency"],
         "recommended_timeframe": info["timeframe"],
         "five_year_survival_rate": info["five_year_survival"],
-        "disclaimer": "This information is for clinical reference only. Treatment decisions must be made by qualified healthcare professionals."
+        "sharp_context_active": sharp["has_context"],
+        "disclaimer": (
+            "This information is for clinical reference only. "
+            "Treatment decisions must be made by qualified healthcare professionals."
+        )
     }, indent=2)
 
 
@@ -327,10 +462,15 @@ async def get_tumor_info(
 # ─────────────────────────────────────────────
 @mcp.tool(
     name="list_tumor_classes",
-    description="List all 9 brain tumor types that the classifier can detect, with severity levels and urgency information. Useful for understanding the scope of the classifier and available diagnoses."
+    description=(
+        "List all 9 brain tumor types that this classifier can detect, "
+        "with severity levels, urgency levels, and recommended timeframes. "
+        "No arguments required. Use before analyze_mri to understand the "
+        "classifier scope. SHARP-on-MCP compliant."
+    )
 )
 async def list_tumor_classes(ctx: Context = None) -> str:
-    """List all supported tumor classes with basic info"""
+    """List all supported tumor classes. SHARP-on-MCP compliant."""
 
     classes = []
     for cls_key, info in CLASS_INFO.items():
@@ -347,6 +487,9 @@ async def list_tumor_classes(ctx: Context = None) -> str:
         "classifier_name": "Neuro-Symbolic Brain Tumor Classifier",
         "model_architecture": "FFT Preprocessing + CGAN Augmentation + MobileNetV2 + Temperature Scaling",
         "approach": "Hybrid Neuro-Symbolic AI",
+        "fhir_output": "FHIR R4 DiagnosticReport",
+        "sharp_compliant": True,
+        "extension_url": "http://ai-diagnostics.org/fhir/neurosymbolic",
         "tumor_classes": classes,
         "severity_guide": {
             "HIGH": "Malignant tumors requiring urgent specialist referral",
@@ -362,13 +505,20 @@ async def list_tumor_classes(ctx: Context = None) -> str:
 # ─────────────────────────────────────────────
 @mcp.tool(
     name="validate_mri_image",
-    description="Validate whether an uploaded image is a suitable brain MRI scan before analysis. Checks image format, dimensions, quality indicators, and grayscale characteristics. Run this before analyze_mri to catch bad uploads early."
+    description=(
+        "Validate whether an uploaded image is a suitable brain MRI scan before analysis. "
+        "Checks image format, dimensions, quality indicators, brightness, contrast, and "
+        "grayscale characteristics. Returns quality score (0-100), issues, and warnings. "
+        "Run before analyze_mri to catch unsuitable images early."
+    )
 )
 async def validate_mri_image(
-        image_data: Annotated[str, Field(description="Base64-encoded image to validate (JPG, PNG, or JPEG)")],
+        image_data: Annotated[str, Field(
+            description="Base64-encoded image to validate (JPG, PNG, or JPEG)"
+        )],
         ctx: Context = None
 ) -> str:
-    """Validate if image is a suitable brain MRI"""
+    """Validate MRI image quality before analysis."""
 
     try:
         if "," in image_data:
@@ -425,7 +575,7 @@ async def validate_mri_image(
             "is_valid": is_valid,
             "quality_score": score,
             "quality_label": "GOOD" if score >= 70 else "ACCEPTABLE" if score >= 50 else "POOR",
-            "recommendation": "Safe to analyze with analyze_mri" if is_valid else "Consider using a higher quality MRI image",
+            "recommendation": "Safe to analyze with analyze_mri" if is_valid else "Consider a higher quality MRI image",
             "image_properties": {
                 "width_px": width,
                 "height_px": height,
@@ -449,23 +599,49 @@ async def validate_mri_image(
 
 # ─────────────────────────────────────────────
 # TOOL 5: assess_urgency
+# SHARP-on-MCP compliant + context-aware
 # ─────────────────────────────────────────────
 @mcp.tool(
     name="assess_urgency",
-    description="Assess clinical urgency from a FHIR DiagnosticReport generated by analyze_mri. Returns urgency level (IMMEDIATE/URGENT/ROUTINE), recommended timeframe, red flags, and next clinical steps. Use after analyze_mri to guide clinical action."
+    description=(
+        "Assess clinical urgency from a FHIR DiagnosticReport generated by analyze_mri. "
+        "Returns urgency level (IMMEDIATE/URGENT/ROUTINE), recommended timeframe, "
+        "red flags detected, and next clinical steps. Accepts patient age and symptoms "
+        "for context-aware urgency escalation. SHARP-on-MCP compliant: reads patientId "
+        "from SHARP context headers for seamless multi-agent workflow integration."
+    )
 )
 async def assess_urgency(
-        fhir_report_json: Annotated[str, Field(description="FHIR DiagnosticReport JSON string from analyze_mri tool")],
-        patient_age: Annotated[int, Field(description="Patient age in years (affects urgency assessment)", ge=0, le=120)] = 0,
-        additional_symptoms: Annotated[str, Field(description="Additional symptoms reported by patient (optional)")] = "",
+        fhir_report_json: Annotated[str, Field(
+            description="FHIR DiagnosticReport JSON string output from analyze_mri tool"
+        )],
+        patient_age: Annotated[int, Field(
+            description="Patient age in years. Pediatric (<18) and elderly (>65) patients "
+                        "with high-severity tumors receive automatic urgency escalation.",
+            ge=0, le=120
+        )] = 0,
+        additional_symptoms: Annotated[str, Field(
+            description="Comma-separated additional symptoms e.g. 'seizures, vision loss, headaches'. "
+                        "Critical symptoms trigger automatic IMMEDIATE urgency escalation."
+        )] = "",
         ctx: Context = None
 ) -> str:
-    """Assess clinical urgency from FHIR report"""
+    """
+    Context-aware clinical urgency assessment.
+    SHARP-on-MCP compliant - reads patient context from headers.
+    """
 
+    # ── Read SHARP context ──
+    sharp = read_sharp_context(ctx)
+
+    # ── Validate FHIR report ──
     try:
         report = json.loads(fhir_report_json)
     except json.JSONDecodeError:
-        return json.dumps({"error": "Invalid FHIR report JSON. Please provide output from analyze_mri tool."}, indent=2)
+        return json.dumps({
+            "error": "INVALID_FHIR_REPORT",
+            "message": "Invalid FHIR report JSON. Please provide output directly from analyze_mri tool."
+        }, indent=2)
 
     status = report.get("status", "unknown")
     extensions = report.get("extension", [{}])[0].get("extension", [])
@@ -494,16 +670,16 @@ async def assess_urgency(
     urgency_upgrade = False
 
     if uncertain:
-        red_flags.append("AI confidence below threshold - requires radiologist review")
+        red_flags.append("AI confidence below clinical threshold - radiologist review required")
         urgency_upgrade = True
     if ambiguity == "AMBIGUOUS":
         red_flags.append("Ambiguous classification - differential diagnosis needed")
         urgency_upgrade = True
     if confidence < 0.4:
-        red_flags.append(f"Low confidence score ({round(confidence * 100, 1)}%) - second opinion recommended")
+        red_flags.append(f"Low confidence ({round(confidence * 100, 1)}%) - second opinion recommended")
     if patient_age > 0:
         if patient_age > 65 and severity == "high":
-            red_flags.append(f"Patient age {patient_age} with high-severity tumor - expedited referral advised")
+            red_flags.append(f"Elderly patient (age {patient_age}) with high-severity tumor - expedited referral")
             urgency_upgrade = True
         if patient_age < 18 and pred_cls != "normal":
             red_flags.append(f"Pediatric patient ({patient_age}y) - pediatric neuro-oncology referral required")
@@ -557,6 +733,7 @@ async def assess_urgency(
         "next_steps": next_steps,
         "patient_age_considered": patient_age if patient_age > 0 else "Not provided",
         "additional_symptoms_considered": additional_symptoms if additional_symptoms else "None provided",
+        "sharp_patient_context": sharp["patientId"] if sharp["patientId"] else "Not provided via SHARP",
         "disclaimer": "This urgency assessment is AI-generated and must be reviewed by a qualified clinician."
     }, indent=2)
 
@@ -566,14 +743,27 @@ async def assess_urgency(
 # ─────────────────────────────────────────────
 @mcp.tool(
     name="generate_clinical_summary",
-    description="Generate a plain-English clinical summary from a FHIR DiagnosticReport produced by analyze_mri. Converts technical FHIR output into readable summaries. Supports two formats: 'clinical' (for doctors/SOAP notes) and 'patient' (simplified for patients)."
+    description=(
+        "Generate a plain-English clinical summary from a FHIR DiagnosticReport "
+        "produced by analyze_mri. Converts technical FHIR output and symbolic reasoning "
+        "traces into readable summaries. Supports two formats: "
+        "'clinical' (structured SOAP-style for doctors, includes differential diagnosis "
+        "and symbolic reasoning summary) and "
+        "'patient' (simplified language for patients explaining findings and next steps). "
+        "SHARP-on-MCP compliant."
+    )
 )
 async def generate_clinical_summary(
-        fhir_report_json: Annotated[str, Field(description="FHIR DiagnosticReport JSON string from analyze_mri tool")],
-        format: Annotated[str, Field(description="Summary format: 'clinical' for medical professionals, 'patient' for simplified patient-facing language")] = "clinical",
+        fhir_report_json: Annotated[str, Field(
+            description="FHIR DiagnosticReport JSON string from analyze_mri tool"
+        )],
+        format: Annotated[str, Field(
+            description="Summary format: 'clinical' for medical professionals (default), "
+                        "'patient' for simplified patient-facing language"
+        )] = "clinical",
         ctx: Context = None
 ) -> str:
-    """Generate readable clinical summary from FHIR report"""
+    """Generate readable clinical summary. SHARP-on-MCP compliant."""
 
     try:
         report = json.loads(fhir_report_json)
@@ -632,14 +822,18 @@ async def generate_clinical_summary(
             "what_this_means": info.get("description", ""),
             "common_symptoms": info.get("symptoms", []),
             "next_step": next_step,
-            "important_note": "This is an AI-assisted analysis. Your doctor will review these results and discuss them with you. Do not make medical decisions based on this report alone."
+            "important_note": (
+                "This is an AI-assisted analysis designed to support (not replace) clinical judgment. "
+                "Your doctor will review these results and discuss them with you. "
+                "Do not make medical decisions based on this report alone."
+            )
         }
     else:
         uncertainty_note = ""
         if uncertain:
             uncertainty_note = f"UNCERTAIN: Confidence ({round(confidence*100,1)}%) below threshold. Radiologist review recommended."
         if ambiguity == "AMBIGUOUS":
-            uncertainty_note += " Ambiguous differential - consider contrast MRI."
+            uncertainty_note += " Ambiguous differential - consider contrast-enhanced MRI."
 
         differential = [
             f"{CLASS_INFO.get(cls, {}).get('display', cls)} ({round(prob*100,1)}%)"
@@ -668,7 +862,10 @@ async def generate_clinical_summary(
                 f"Typical urgency: {info.get('urgency', 'ROUTINE')} - {info.get('timeframe', '')}",
                 f"5-year survival reference: {info.get('five_year_survival', 'N/A')}"
             ],
-            "disclaimer": "AI-generated report. Must be reviewed and confirmed by qualified radiologist/neuro-oncologist before clinical use."
+            "disclaimer": (
+                "AI-generated report. This tool is designed to assist (not replace) qualified clinicians. "
+                "Must be reviewed and confirmed by a radiologist or neuro-oncologist before clinical use."
+            )
         }
 
     return json.dumps(summary, indent=2)

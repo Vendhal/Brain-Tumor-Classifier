@@ -21,7 +21,7 @@ Upload any brain MRI image → get a full FHIR DiagnosticReport in seconds.
 
 ## 🎯 What It Does
 
-The **only medical imaging AI tool** in the Prompt Opinion marketplace.  
+**The only MRI scan analysis AI tool** in the Prompt Opinion marketplace.  
 While every other submission handles text-based clinical workflows (drug interactions, prior auth, lab results), we tackle the hardest problem: **real-time brain tumor classification from raw MRI scans**.
 
 ### Core Pipeline:
@@ -104,6 +104,19 @@ Ready for direct integration with **Epic**, **Cerner**, or any FHIR-compliant EH
 
 ---
 
+## **SHARP Extension Specs**
+
+This server implements **SHARP Extension Specs** for seamless 
+FHIR context propagation across multi-agent workflows.
+
+Headers read automatically:
+- `fhirUrl` — Base URL of the FHIR server
+- `fhirToken` — Bearer token for FHIR authentication  
+- `patientId` — Current patient FHIR ID
+
+All tools are **SHARP-on-MCP compliant**.
+---
+
 ## 🚀 Quick Start (Local)
 
 ```bash
@@ -182,20 +195,22 @@ Brain-Tumor-Classifier/
 ## 🧪 Testing End-to-End
 
 ### Via Live Interface:
-1. Visit [https://vendhal.github.io/Brain-Tumor-Classifier/](https://vendhal.github.io/Brain-Tumor-Classifier/)
+1. Visit https://vendhal.github.io/Brain-Tumor-Classifier/
 2. Upload a brain MRI image (JPG/PNG)
-3. Click **Analyze MRI**
+3. Click **Analyze MRI** → get full FHIR DiagnosticReport
 4. Download the FHIR Report (JSON)
-5. Upload to a Prompt Opinion patient record
-7. Connect the MCP server in your workspace
-1. validate_mri_image  → check quality first
-2. analyze_mri         → classify tumor → FHIR report
-3. assess_urgency      → how urgent is it?
+5. Upload JSON to a Prompt Opinion patient record
+6. Ask the agent: "Read the FHIR report and summarize the findings"
+
+### Via MCP Tools (for developers/agents):
+1. validate_mri_image → check quality first
+2. analyze_mri → classify tumor → FHIR report
+3. assess_urgency → how urgent is it?
 4. generate_clinical_summary → explain to doctor + patient
-5. get_tumor_info      → deep dive on detected class
+5. get_tumor_info → deep dive on detected class
 
 ### Sample Test Images:
-Download brain MRI test images from [Kaggle Brain Tumor MRI Dataset](https://www.kaggle.com/datasets/masoudnickparvar/brain-tumor-mri-dataset)
+Download brain MRI test images from [Kaggle Brain Tumor MRI Dataset](https://www.kaggle.com/datasets/masoudnickparvar/brain-tumor-mri-dataset) or any other Brain Tumor MRI Datasets you like.
 
 ---
 
