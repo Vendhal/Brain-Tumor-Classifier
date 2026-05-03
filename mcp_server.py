@@ -203,29 +203,31 @@ def detect_wrong_input(image_data: str) -> dict | None:
     # Check if it looks like JSON (FHIR document, etc.)
     if stripped.startswith('{') or stripped.startswith('['):
         return {
-            "error": "WRONG_INPUT_TYPE",
+            "status": "ERROR",
+            "reason": "INPUT_TYPE_MISMATCH",
             "message": (
-                "Received JSON/text data instead of a base64-encoded image. "
-                "This tool requires an actual MRI image file, not a FHIR document or text. "
-                "Please provide a base64-encoded JPG or PNG image."
+                "The file provided appears to be a text document or metadata (JSON), "
+                "not a brain MRI scan image. This tool requires an actual MRI image file."
             ),
-            "hint": (
-                "If you are trying to read a patient's existing diagnostic report, "
-                "use the patient's uploaded FHIR JSON document directly. "
-                "To analyze a NEW MRI scan, provide the image as base64."
+            "what_to_do": (
+                "To analyze a brain MRI scan: provide a base64-encoded JPG or PNG image. "
+                "To read an existing diagnostic report: use the FHIR JSON document directly "
+                "without calling this tool."
             ),
-            "correct_usage": "image_data should be base64-encoded image bytes, not JSON text"
+            "quick_start": "Upload your MRI image at vendhal.github.io/Brain-Tumor-Classifier"
         }
 
-    # Check if it's plain text (too short or readable text)
+    # Check if it's plain text
     if len(stripped) < 100 and not stripped.replace('+', '').replace('/', '').replace('=', '').isalnum():
         return {
-            "error": "WRONG_INPUT_TYPE",
+            "status": "ERROR",
+            "reason": "INPUT_TYPE_MISMATCH",
             "message": (
-                "Input appears to be plain text rather than a base64-encoded image. "
-                "Please provide a valid base64-encoded MRI image (JPG or PNG)."
+                "The file provided appears to be plain text, not a brain MRI scan image. "
+                "This tool requires an actual MRI image file (JPG or PNG)."
             ),
-            "hint": "Use the web interface at vendhal.github.io/Brain-Tumor-Classifier to generate valid base64 image data."
+            "what_to_do": "Provide a base64-encoded MRI image, not text or document content.",
+            "quick_start": "Upload your MRI image at vendhal.github.io/Brain-Tumor-Classifier"
         }
 
     return None
@@ -308,9 +310,12 @@ async def analyze_mri(
         image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     except Exception as e:
         return json.dumps({
-            "error": "IMAGE_DECODE_FAILED",
-            "message": f"Could not decode image: {str(e)}",
-            "hint": "Ensure you are providing a valid base64-encoded JPG or PNG image."
+            "status": "ERROR",
+            "reason": "IMAGE_DECODE_FAILED",
+            "message": f"The image file could not be read. It may be corrupted or in an unsupported format.",
+            "technical_detail": str(e),
+            "what_to_do": "Please provide a valid JPG or PNG brain MRI image encoded in base64.",
+            "quick_start": "Upload your MRI image at vendhal.github.io/Brain-Tumor-Classifier"
         }, indent=2)
 
     # ── Preprocess ──
@@ -459,7 +464,10 @@ async def get_tumor_info(
                 break
         else:
             return json.dumps({
-                "error": f"Unknown tumor class: {tumor_class}",
+                "status": "ERROR",
+                "reason": "UNKNOWN_TUMOR_CLASS",
+                "message": f"'{tumor_class}' is not a recognized tumor class in this classifier.",
+                "what_to_do": "Use list_tumor_classes tool to see all available tumor types.",
                 "available_classes": list(CLASS_INFO.keys())
             }, indent=2)
 
@@ -627,9 +635,13 @@ async def validate_mri_image(
 
     except Exception as e:
         return json.dumps({
+            "status": "ERROR",
             "is_valid": False,
-            "error": f"Could not process image: {str(e)}",
-            "recommendation": "Please provide a valid base64-encoded JPG or PNG image."
+            "reason": "IMAGE_VALIDATION_FAILED",
+            "message": "The image file could not be validated. It may be corrupted or in an unsupported format.",
+            "technical_detail": str(e),
+            "what_to_do": "Please provide a valid JPG or PNG brain MRI image.",
+            "quick_start": "Upload your MRI image at vendhal.github.io/Brain-Tumor-Classifier"
         }, indent=2)
 
 
@@ -669,8 +681,11 @@ async def assess_urgency(
         report = json.loads(fhir_report_json)
     except json.JSONDecodeError:
         return json.dumps({
-            "error": "INVALID_FHIR_REPORT",
-            "message": "Invalid FHIR report JSON. Please provide output directly from analyze_mri tool."
+            "status": "ERROR",
+            "reason": "INVALID_FHIR_REPORT",
+            "message": "The diagnostic report provided could not be read. It may be incomplete or incorrectly formatted.",
+            "what_to_do": "Run analyze_mri first and pass its output directly to this tool.",
+            "example": "Call analyze_mri with an MRI image, then pass the result to assess_urgency."
         }, indent=2)
 
     status = report.get("status", "unknown")
@@ -798,7 +813,13 @@ async def generate_clinical_summary(
     try:
         report = json.loads(fhir_report_json)
     except json.JSONDecodeError:
-        return json.dumps({"error": "Invalid FHIR report JSON."}, indent=2)
+        return json.dumps({
+            "status": "ERROR",
+            "reason": "INVALID_FHIR_REPORT",
+            "message": "The diagnostic report provided could not be read. It may be incomplete or incorrectly formatted.",
+            "what_to_do": "Run analyze_mri first and pass its output directly to this tool.",
+            "example": "Call analyze_mri with an MRI image, then pass the result to generate_clinical_summary."
+        }, indent=2)
 
     report_id = report.get("id", "unknown")
     status = report.get("status", "unknown")
