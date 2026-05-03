@@ -147,11 +147,7 @@ def apply_fft(img_tensor):
 def read_sharp_context(ctx: Context) -> dict:
     """
     Read SHARP Extension Spec headers from Prompt Opinion.
-
-    Headers read:
-    - fhirUrl:   Base URL of the FHIR server
-    - fhirToken: Bearer token for FHIR server auth
-    - patientId: Current patient FHIR ID
+    Headers: fhirUrl, fhirToken, patientId
     """
     sharp = {
         "fhirUrl": "",
@@ -167,12 +163,11 @@ def read_sharp_context(ctx: Context) -> dict:
     try:
         headers = ctx.request_context.request.headers
 
-        # Read SHARP headers
         sharp["fhirUrl"] = headers.get("fhirUrl", "")
         sharp["fhirToken"] = headers.get("fhirToken", "")
         sharp["patientId"] = headers.get("patientId", "")
 
-        # Also check alternate casing (X- prefix variants)
+        # Also check X- prefix variants
         if not sharp["fhirUrl"]:
             sharp["fhirUrl"] = headers.get("X-FHIR-Server-URL", "")
         if not sharp["fhirToken"]:
@@ -180,7 +175,6 @@ def read_sharp_context(ctx: Context) -> dict:
         if not sharp["patientId"]:
             sharp["patientId"] = headers.get("X-Patient-ID", "")
 
-        # Validate token if fhirUrl is present
         if sharp["fhirUrl"] and not sharp["fhirToken"]:
             sharp["error"] = "SHARP_TOKEN_MISSING"
 
@@ -192,24 +186,53 @@ def read_sharp_context(ctx: Context) -> dict:
     return sharp
 
 
-def validate_sharp_context(sharp: dict) -> dict | None:
+# ─────────────────────────────────────────────
+# GUARD: Detect wrong input type
+# Prevents agent from passing FHIR JSON or
+# document text as image_data by mistake
+# ─────────────────────────────────────────────
+def detect_wrong_input(image_data: str) -> dict | None:
     """
-    Returns SHARP error response if context is invalid.
-    Returns None if context is valid or not required.
+    Detects if the agent accidentally passed a JSON document
+    or plain text instead of a base64-encoded image.
+    This happens when agents confuse patient documents with images.
+    Returns an error dict if wrong input detected, None if OK.
     """
-    if sharp.get("error") == "SHARP_TOKEN_MISSING":
+    stripped = image_data.strip()
+
+    # Check if it looks like JSON (FHIR document, etc.)
+    if stripped.startswith('{') or stripped.startswith('['):
         return {
-            "error": "SHARP_CONTEXT_MISSING",
-            "message": "fhirToken is missing. Please provide fhirUrl and fhirToken in SHARP headers.",
-            "sharp_headers_required": ["fhirUrl", "fhirToken", "patientId"],
-            "note": "This tool works in standalone mode without SHARP context. Patient reference will default to 'Patient/unknown'."
+            "error": "WRONG_INPUT_TYPE",
+            "message": (
+                "Received JSON/text data instead of a base64-encoded image. "
+                "This tool requires an actual MRI image file, not a FHIR document or text. "
+                "Please provide a base64-encoded JPG or PNG image."
+            ),
+            "hint": (
+                "If you are trying to read a patient's existing diagnostic report, "
+                "use the patient's uploaded FHIR JSON document directly. "
+                "To analyze a NEW MRI scan, provide the image as base64."
+            ),
+            "correct_usage": "image_data should be base64-encoded image bytes, not JSON text"
         }
+
+    # Check if it's plain text (too short or readable text)
+    if len(stripped) < 100 and not stripped.replace('+', '').replace('/', '').replace('=', '').isalnum():
+        return {
+            "error": "WRONG_INPUT_TYPE",
+            "message": (
+                "Input appears to be plain text rather than a base64-encoded image. "
+                "Please provide a valid base64-encoded MRI image (JPG or PNG)."
+            ),
+            "hint": "Use the web interface at vendhal.github.io/Brain-Tumor-Classifier to generate valid base64 image data."
+        }
+
     return None
 
 
 # ─────────────────────────────────────────────
 # CAPABILITIES PATCH
-# Declares SHARP Extension compliance
 # ─────────────────────────────────────────────
 _original_get_capabilities = mcp._mcp_server.get_capabilities
 
@@ -229,7 +252,6 @@ mcp._mcp_server.get_capabilities = _patched_get_capabilities
 
 # ─────────────────────────────────────────────
 # TOOL 1: analyze_mri
-# SHARP-on-MCP compliant
 # ─────────────────────────────────────────────
 @mcp.tool(
     name="analyze_mri",
@@ -239,12 +261,17 @@ mcp._mcp_server.get_capabilities = _patched_get_capabilities
         "clinical reasoning traces (3 rules: confidence threshold, severity assessment, "
         "ambiguity detection), uncertainty flags, and clinical recommendations. "
         "SHARP-on-MCP compliant: automatically reads fhirUrl, fhirToken, and patientId "
-        "from SHARP context headers when available in Prompt Opinion workspace."
+        "from SHARP context headers when available in Prompt Opinion workspace. "
+        "Input must be a base64-encoded image file (JPG/PNG), NOT a FHIR document or JSON text."
     )
 )
 async def analyze_mri(
         image_data: Annotated[str, Field(
-            description="Base64-encoded MRI image (JPG, PNG, or JPEG format)"
+            description=(
+                "Base64-encoded MRI image (JPG, PNG, or JPEG format). "
+                "Must be actual image binary data encoded as base64. "
+                "Do NOT pass FHIR JSON, patient documents, or plain text here."
+            )
         )],
         patient_reference: Annotated[str, Field(
             description="FHIR patient reference e.g. 'Patient/12345'. "
@@ -252,29 +279,39 @@ async def analyze_mri(
         )] = "Patient/unknown",
         ctx: Context = None
 ) -> str:
-    """
-    Neuro-symbolic brain MRI analysis with SHARP context support.
-    Automatically reads FHIR context from Prompt Opinion SHARP headers.
-    """
+    """Neuro-symbolic brain MRI analysis. SHARP-on-MCP compliant."""
 
     # ── Read SHARP context ──
     sharp = read_sharp_context(ctx)
 
-    # Auto-populate patient_reference from SHARP patientId if not provided
+    # Auto-populate patient_reference from SHARP patientId
     if sharp["patientId"] and patient_reference == "Patient/unknown":
         patient_reference = f"Patient/{sharp['patientId']}"
 
-    # ── Decode and validate base64 image ──
+    # ── Strip data URI prefix if present ──
     if "," in image_data:
         image_data = image_data.split(",")[1]
 
+    # ── Guard: detect wrong input type ──
+    wrong = detect_wrong_input(image_data)
+    if wrong:
+        return json.dumps(wrong, indent=2)
+
+    # ── Fix base64 padding ──
     image_data = image_data.strip()
     padding = 4 - len(image_data) % 4
     if padding != 4:
         image_data += "=" * padding
 
-    image_bytes = base64.b64decode(image_data)
-    image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    try:
+        image_bytes = base64.b64decode(image_data)
+        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    except Exception as e:
+        return json.dumps({
+            "error": "IMAGE_DECODE_FAILED",
+            "message": f"Could not decode image: {str(e)}",
+            "hint": "Ensure you are providing a valid base64-encoded JPG or PNG image."
+        }, indent=2)
 
     # ── Preprocess ──
     transform = transforms.Compose([
@@ -356,7 +393,6 @@ async def analyze_mri(
             }
             for i in range(NUM_CLASSES)
         ],
-        # ── SHARP Extension: neurosymbolic reasoning trace ──
         "extension": [{
             "url": "http://ai-diagnostics.org/fhir/neurosymbolic",
             "extension": [
@@ -368,20 +404,13 @@ async def analyze_mri(
                         "probabilities": [round(float(p), 4) for p in probs]
                     })
                 },
-                {
-                    "url": "symbolicReasoning",
-                    "valueString": json.dumps(reasoning)
-                },
-                {
-                    "url": "uncertaintyFlag",
-                    "valueBoolean": uncertain
-                },
+                {"url": "symbolicReasoning", "valueString": json.dumps(reasoning)},
+                {"url": "uncertaintyFlag", "valueBoolean": uncertain},
                 {
                     "url": "recommendedAction",
                     "valueString": "Refer to radiologist" if uncertain else "Clinical correlation advised"
                 },
                 {
-                    # SHARP context metadata - shows SHARP compliance
                     "url": "sharpContext",
                     "valueString": json.dumps({
                         "sharp_compliant": True,
@@ -399,7 +428,6 @@ async def analyze_mri(
 
 # ─────────────────────────────────────────────
 # TOOL 2: get_tumor_info
-# SHARP-on-MCP compliant
 # ─────────────────────────────────────────────
 @mcp.tool(
     name="get_tumor_info",
@@ -421,9 +449,7 @@ async def get_tumor_info(
 ) -> str:
     """Get clinical info about a tumor type. SHARP-on-MCP compliant."""
 
-    # Read SHARP context (for compliance - not required for this tool)
     sharp = read_sharp_context(ctx)
-
     tumor_class = tumor_class.lower().strip()
 
     if tumor_class not in CLASS_INFO:
@@ -509,21 +535,31 @@ async def list_tumor_classes(ctx: Context = None) -> str:
         "Validate whether an uploaded image is a suitable brain MRI scan before analysis. "
         "Checks image format, dimensions, quality indicators, brightness, contrast, and "
         "grayscale characteristics. Returns quality score (0-100), issues, and warnings. "
-        "Run before analyze_mri to catch unsuitable images early."
+        "Run before analyze_mri to catch unsuitable images early. "
+        "Input must be base64-encoded image data, NOT a FHIR document or JSON text."
     )
 )
 async def validate_mri_image(
         image_data: Annotated[str, Field(
-            description="Base64-encoded image to validate (JPG, PNG, or JPEG)"
+            description=(
+                "Base64-encoded image to validate (JPG, PNG, or JPEG). "
+                "Must be actual image data, not a FHIR JSON document."
+            )
         )],
         ctx: Context = None
 ) -> str:
     """Validate MRI image quality before analysis."""
 
-    try:
-        if "," in image_data:
-            image_data = image_data.split(",")[1]
+    # Strip data URI prefix
+    if "," in image_data:
+        image_data = image_data.split(",")[1]
 
+    # Guard: detect wrong input type
+    wrong = detect_wrong_input(image_data)
+    if wrong:
+        return json.dumps(wrong, indent=2)
+
+    try:
         image_data = image_data.strip()
         padding = 4 - len(image_data) % 4
         if padding != 4:
@@ -593,13 +629,12 @@ async def validate_mri_image(
         return json.dumps({
             "is_valid": False,
             "error": f"Could not process image: {str(e)}",
-            "recommendation": "Please provide a valid JPG or PNG image"
+            "recommendation": "Please provide a valid base64-encoded JPG or PNG image."
         }, indent=2)
 
 
 # ─────────────────────────────────────────────
 # TOOL 5: assess_urgency
-# SHARP-on-MCP compliant + context-aware
 # ─────────────────────────────────────────────
 @mcp.tool(
     name="assess_urgency",
@@ -621,20 +656,15 @@ async def assess_urgency(
             ge=0, le=120
         )] = 0,
         additional_symptoms: Annotated[str, Field(
-            description="Comma-separated additional symptoms e.g. 'seizures, vision loss, headaches'. "
-                        "Critical symptoms trigger automatic IMMEDIATE urgency escalation."
+            description="Comma-separated symptoms e.g. 'seizures, vision loss, headaches'. "
+                        "Critical symptoms trigger IMMEDIATE urgency escalation."
         )] = "",
         ctx: Context = None
 ) -> str:
-    """
-    Context-aware clinical urgency assessment.
-    SHARP-on-MCP compliant - reads patient context from headers.
-    """
+    """Context-aware urgency assessment. SHARP-on-MCP compliant."""
 
-    # ── Read SHARP context ──
     sharp = read_sharp_context(ctx)
 
-    # ── Validate FHIR report ──
     try:
         report = json.loads(fhir_report_json)
     except json.JSONDecodeError:
